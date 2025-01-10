@@ -8,6 +8,7 @@ const openai = new OpenAI({
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  videoUrl?: string;
 }
 
 export async function POST(req: Request) {
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
     });
 
     const completion = response.choices[0].message.content;
-    return NextResponse.json({ role: 'assistant' as const, content: completion });
+    return NextResponse.json({ message: { role: 'assistant' as const, content: completion } });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

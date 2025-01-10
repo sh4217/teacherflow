@@ -23,30 +23,30 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
+      // Generate video first
+      await fetch('http://localhost:8000/generate-video', {
+        method: 'POST',
+      });
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          messages: [...messages, userMessage]
-        })
+        body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch response');
-      }
-
-      const aiResponse: ChatMessage = await response.json();
-      setMessages(prevMessages => [...prevMessages, aiResponse]);
+      if (!response.ok) throw new Error('Failed to get response');
+      
+      const data = await response.json();
+      const assistantMessage = {
+        ...data.message,
+        videoUrl: '/generated-videos/manim.mp4'  // Add video URL to the message
+      };
+      
+      setMessages(prevMessages => [...prevMessages, assistantMessage]);
     } catch (error) {
       console.error('Error:', error);
-      // Optionally add error message to chat
-      const errorMessage: ChatMessage = {
-        role: 'assistant',
-        content: "Sorry, I encountered an error. Please try again."
-      };
-      setMessages(prevMessages => [...prevMessages, errorMessage]);
     } finally {
       setIsLoading(false);
     }
