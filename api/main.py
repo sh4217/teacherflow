@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 import os
 import uuid
 from pathlib import Path
@@ -22,18 +23,21 @@ app.add_middleware(
 # Path to Next.js public/generated-videos directory
 VIDEOS_DIR = Path("../public/generated-videos")
 
-class CircleToSquare(Scene):
+class VideoRequest(BaseModel):
+    text: str
+
+class Script(Scene):
+    def __init__(self, text: str):
+        super().__init__()
+        self.text = text
+
     def construct(self):
-        blue_circle = Circle(color=BLUE, fill_opacity=0.5)
-        green_square = Square(color=GREEN, fill_opacity=0.8)
-        self.play(Create(blue_circle))
-        self.wait()
-        
-        self.play(Transform(blue_circle, green_square))
-        self.wait()
+        label = Text(self.text)
+        self.add(label)
+        self.wait(2)
 
 @app.post("/generate-video")
-async def generate_video():
+async def generate_video(request: VideoRequest):
     try:
         # Create videos directory if it doesn't exist
         VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
@@ -49,8 +53,8 @@ async def generate_video():
             config.quality = "medium_quality"
             config.output_file = "animation"
             
-            # Create and render the scene
-            scene = CircleToSquare()
+            # Create and render the scene with the provided text
+            scene = Script(request.text)
             scene.render()
             
             # Find the generated video

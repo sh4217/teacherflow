@@ -26,6 +26,10 @@ export default function Chat() {
       // Generate video first
       await fetch('http://localhost:8000/generate-video', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: "Example text" }),
       });
 
       const response = await fetch('/api/chat', {
