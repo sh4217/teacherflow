@@ -1,5 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:/Users/seanhall/teacherflow/api/media/videos/1080p60/partial_movie_files/CircleToSquare/3977891868_510092317_223132457.mp4'
-file 'file:/Users/seanhall/teacherflow/api/media/videos/1080p60/partial_movie_files/CircleToSquare/2852726489_1733944848_2936918478.mp4'
-file 'file:/Users/seanhall/teacherflow/api/media/videos/1080p60/partial_movie_files/CircleToSquare/2852726489_1271517577_1415832020.mp4'
-file 'file:/Users/seanhall/teacherflow/api/media/videos/1080p60/partial_movie_files/CircleToSquare/2852726489_1733944848_2731054905.mp4'
