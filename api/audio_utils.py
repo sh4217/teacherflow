@@ -9,6 +9,23 @@ MAX_AUDIO_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 ALLOWED_AUDIO_TYPES = {'audio/mpeg', 'audio/mp3'}
 MAX_DURATION_SECONDS = 300  # 5 minutes
 
+def get_audio_duration(file_path: str) -> float:
+    """Get the duration of an audio file in seconds.
+    
+    Args:
+        file_path (str): Path to the audio file
+        
+    Returns:
+        float: Duration in seconds, or 5.0 if duration cannot be determined
+    """
+    try:
+        audio = mutagen.File(file_path)
+        if audio is None:
+            return 5.0  # Default duration if file can't be read
+        return float(audio.info.length)
+    except Exception:
+        return 5.0  # Default duration if there's an error
+
 def validate_audio_file(file: UploadFile) -> Tuple[bool, Optional[str]]:
     """
     Validate audio file format, size, and integrity.

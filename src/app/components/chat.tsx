@@ -28,10 +28,33 @@ export default function Chat() {
     return await response.blob();
   };
 
+  const parseScenes = (text: string): string[] => {
+    const pattern = /<scene>([^]*?)<\/scene>/g;
+    const scenes: string[] = [];
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      scenes.push(match[1].trim());
+    }
+    return scenes;
+  };
+
   const generateVideo = async (text: string, audioBlob: Blob) => {
+    const scenes = parseScenes(text);
+    if (scenes.length === 0) {
+      throw new Error('No scenes found in text');
+    }
+
+    // Generate audio for each scene
+    const audioBlobs = await Promise.all(
+      scenes.map(scene => generateSpeech(scene))
+    );
+
+    // Create form data with all scenes and audio files
     const formData = new FormData();
-    formData.append('text', text);
-    formData.append('audio', audioBlob);
+    scenes.forEach((scene, i) => {
+      formData.append('texts', scene);
+      formData.append('audio_files', audioBlobs[i], `scene_${i}.mp3`);
+    });
 
     const response = await fetch('http://localhost:8000/generate-video', {
       method: 'POST',
@@ -56,18 +79,10 @@ export default function Chat() {
       const allMessages = [...messages, userMessage];
       const aiResponse = await generateText(allMessages);
       
-      // Try to generate audio, but continue even if it fails
-      let audioBlob: Blob | null = null;
-      try {
-        audioBlob = await generateSpeech(aiResponse.message.content);
-      } catch (error) {
-        console.error('Audio generation failed:', error);
-      }
-      
-      // Generate video with or without audio
+      // Generate video with scene-by-scene audio
       const videoUrl = await generateVideo(
         aiResponse.message.content,
-        audioBlob || new Blob() // Pass empty blob if audio generation failed
+        new Blob() // Not used anymore
       );
       
       const assistantMessage = {
