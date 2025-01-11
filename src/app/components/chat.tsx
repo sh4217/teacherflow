@@ -8,44 +8,56 @@ export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const generateText = async (messages: ChatMessage[]) => {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+    });
+    if (!response.ok) throw new Error('Failed to get response');
+    return await response.json();
+  };
+
+  const generateSpeech = async (text: string) => {
+    const response = await fetch('/api/speech', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!response.ok) throw new Error('Failed to generate audio');
+    return await response.blob();
+  };
+
+  const generateVideo = async (text: string, audioBlob: Blob) => {
+    const formData = new FormData();
+    formData.append('text', text);
+    formData.append('audio', audioBlob);
+
+    const response = await fetch('http://localhost:8000/generate-video', {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) throw new Error('Failed to generate video');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || isLoading) return;
     
-    // Add user message
-    const userMessage: ChatMessage = {
-      role: 'user',
-      content: message.trim()
-    };
-    
+    const userMessage: ChatMessage = { role: 'user', content: message.trim() };
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setMessage('');
     setIsLoading(true);
 
     try {
-      // Get AI response first
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ messages: [...messages, userMessage] }),
-      });
-
-      if (!response.ok) throw new Error('Failed to get response');
-      const data = await response.json();
-
-      // Generate video using AI's response
-      await fetch('http://localhost:8000/generate-video', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: data.message.content }),
-      });
+      // Process in sequence: Text -> Speech -> Video
+      const allMessages = [...messages, userMessage];
+      const aiResponse = await generateText(allMessages);
+      const audioBlob = await generateSpeech(aiResponse.message.content);
+      await generateVideo(aiResponse.message.content, audioBlob);
       
       const assistantMessage = {
-        ...data.message,
+        ...aiResponse.message,
         videoUrl: '/generated-videos/manim.mp4'
       };
       
