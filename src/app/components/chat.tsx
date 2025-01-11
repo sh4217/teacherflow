@@ -23,15 +23,7 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
-      // Generate video first
-      await fetch('http://localhost:8000/generate-video', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: "Example text" }),
-      });
-
+      // Get AI response first
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -41,11 +33,20 @@ export default function Chat() {
       });
 
       if (!response.ok) throw new Error('Failed to get response');
-      
       const data = await response.json();
+
+      // Generate video using AI's response
+      await fetch('http://localhost:8000/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: data.message.content }),
+      });
+      
       const assistantMessage = {
         ...data.message,
-        videoUrl: '/generated-videos/manim.mp4'  // Add video URL to the message
+        videoUrl: '/generated-videos/manim.mp4'
       };
       
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
