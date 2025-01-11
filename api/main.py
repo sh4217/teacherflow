@@ -34,35 +34,33 @@ class CombinedScript(Scene):
     def __init__(self, segments: List[SceneSegment]):
         super().__init__()
         self.segments = segments
+        self.MIN_FONT_SIZE = 40  # Minimum readable font size
+        self.INITIAL_FONT_SIZE = 72  # Initial font size
+        
+    def create_text(self, content: str, font_size: float) -> MarkupText:
+        """Create a MarkupText object with consistent styling parameters."""
+        return MarkupText(
+            content,
+            line_spacing=1.2,
+            font_size=font_size,
+            width=config.frame_width * 0.8
+        )
 
     def construct(self):
-        # Configure the frame dimensions for reference
-        frame_width = config.frame_width
         frame_height = config.frame_height
         
         for i, segment in enumerate(self.segments):
             # Clear the previous scene
             self.remove(*self.mobjects)
             
-            # Create text with natural line wrapping
-            text = MarkupText(
-                segment.text,
-                line_spacing=1.2,  # Comfortable line spacing
-                font_size=72,      # Much larger initial font size
-                width=frame_width * 0.8  # Slightly narrower width to encourage more line breaks
-            )
+            # Create initial text
+            text = self.create_text(segment.text, self.INITIAL_FONT_SIZE)
             
             # If text is too tall, gradually reduce font size until it fits
-            MIN_FONT_SIZE = 40  # Minimum readable font size
-            while text.height > frame_height * 0.85 and text.font_size > MIN_FONT_SIZE:  # Add minimum size check
+            while text.height > frame_height * 0.85 and text.font_size > self.MIN_FONT_SIZE:
                 current_size = text.font_size
-                new_size = max(MIN_FONT_SIZE, current_size * 0.95)  # Don't go below minimum
-                text = MarkupText(
-                    segment.text,
-                    line_spacing=1.2,
-                    font_size=new_size,  # More gradual reduction
-                    width=frame_width * 0.8
-                )
+                new_size = max(self.MIN_FONT_SIZE, current_size * 0.95)
+                text = self.create_text(segment.text, new_size)
             
             # Center the text
             text.move_to(ORIGIN)
