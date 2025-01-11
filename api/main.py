@@ -53,13 +53,15 @@ class CombinedScript(Scene):
             )
             
             # If text is too tall, gradually reduce font size until it fits
-            while text.height > frame_height * 0.85:  # Allow it to use more vertical space
+            MIN_FONT_SIZE = 40  # Minimum readable font size
+            while text.height > frame_height * 0.85 and text.font_size > MIN_FONT_SIZE:  # Add minimum size check
                 current_size = text.font_size
+                new_size = max(MIN_FONT_SIZE, current_size * 0.95)  # Don't go below minimum
                 text = MarkupText(
                     segment.text,
                     line_spacing=1.2,
-                    font_size=current_size * 0.95,  # More gradual reduction
-                    width=frame_width * 0.7
+                    font_size=new_size,  # More gradual reduction
+                    width=frame_width * 0.8
                 )
             
             # Center the text
