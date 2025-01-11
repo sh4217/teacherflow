@@ -44,6 +44,6 @@ next-env.d.ts
 /api/media
 
 # Python cache files
-__pycache__/
+**/__pycache__/
 
 venv/
