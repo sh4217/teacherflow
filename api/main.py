@@ -85,10 +85,9 @@ async def generate_video(
             if not is_valid:
                 raise HTTPException(status_code=400, detail=error_message)
             
-            # Save audio to temp file
-            audio_content = await audio.read()
+            # Stream audio to temp file instead of loading it all into memory
             with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_audio:
-                temp_audio.write(audio_content)
+                shutil.copyfileobj(audio.file, temp_audio)
                 audio_paths.append(temp_audio.name)
                 temp_files.append(temp_audio.name)
 

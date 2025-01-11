@@ -29,7 +29,7 @@ export default function Chat() {
   };
 
   const parseScenes = (text: string): string[] => {
-    const pattern = /<scene>([^]*?)<\/scene>/g;
+    const pattern = /<scene>([\s\S]*?)<\/scene>/g;
     const scenes: string[] = [];
     let match;
     while ((match = pattern.exec(text)) !== null) {
@@ -38,7 +38,7 @@ export default function Chat() {
     return scenes;
   };
 
-  const generateVideo = async (text: string, audioBlob: Blob) => {
+  const generateVideo = async (text: string) => {
     const scenes = parseScenes(text);
     if (scenes.length === 0) {
       throw new Error('No scenes found in text');
