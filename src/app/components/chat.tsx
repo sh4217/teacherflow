@@ -38,6 +38,8 @@ export default function Chat() {
       body: formData,
     });
     if (!response.ok) throw new Error('Failed to generate video');
+    const data = await response.json();
+    return data.videoUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,12 +55,24 @@ export default function Chat() {
       // Process in sequence: Text -> Speech -> Video
       const allMessages = [...messages, userMessage];
       const aiResponse = await generateText(allMessages);
-      const audioBlob = await generateSpeech(aiResponse.message.content);
-      await generateVideo(aiResponse.message.content, audioBlob);
+      
+      // Try to generate audio, but continue even if it fails
+      let audioBlob: Blob | null = null;
+      try {
+        audioBlob = await generateSpeech(aiResponse.message.content);
+      } catch (error) {
+        console.error('Audio generation failed:', error);
+      }
+      
+      // Generate video with or without audio
+      const videoUrl = await generateVideo(
+        aiResponse.message.content,
+        audioBlob || new Blob() // Pass empty blob if audio generation failed
+      );
       
       const assistantMessage = {
         ...aiResponse.message,
-        videoUrl: '/generated-videos/manim.mp4'
+        videoUrl
       };
       
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
