@@ -81,8 +81,7 @@ export default function Chat() {
       
       // Generate video with scene-by-scene audio
       const videoUrl = await generateVideo(
-        aiResponse.message.content,
-        new Blob() // Not used anymore
+        aiResponse.message.content
       );
       
       const assistantMessage = {
