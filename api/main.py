@@ -34,27 +34,49 @@ class CombinedScript(Scene):
     def __init__(self, segments: List[SceneSegment]):
         super().__init__()
         self.segments = segments
+        self.MIN_FONT_SIZE = 40  # Minimum readable font size
+        self.INITIAL_FONT_SIZE = 72  # Initial font size
+        
+    def create_text(self, content: str, font_size: float) -> MarkupText:
+        """Create a MarkupText object with consistent styling parameters."""
+        return MarkupText(
+            content,
+            line_spacing=1.2,
+            font_size=font_size,
+            width=config.frame_width * 0.8
+        )
 
     def construct(self):
+        frame_height = config.frame_height
+        
         for i, segment in enumerate(self.segments):
             # Clear the previous scene
             self.remove(*self.mobjects)
             
-            # Add the text animation for this segment
-            label = Text(segment.text)
-            self.add(label)
+            # Create initial text
+            text = self.create_text(segment.text, self.INITIAL_FONT_SIZE)
+            
+            # If text is too tall, gradually reduce font size until it fits
+            while text.height > frame_height * 0.85 and text.font_size > self.MIN_FONT_SIZE:
+                current_size = text.font_size
+                new_size = max(self.MIN_FONT_SIZE, current_size * 0.95)
+                text = self.create_text(segment.text, new_size)
+            
+            # Center the text
+            text.move_to(ORIGIN)
+            
+            # Add the text to the scene
+            self.add(text)
             
             if segment.has_audio:
                 try:
-                    # Add the audio narration and wait for its duration
                     self.add_sound(segment.audio_path)
                     self.wait(segment.duration)
                 except Exception as e:
                     print(f"Audio playback failed for scene {i}: {e}")
-                    self.wait(5)  # Default 5 second duration
+                    self.wait(5)
             else:
-                # No audio, use default duration
-                self.wait(5)  # Default 5 second duration
+                self.wait(5)
             
             # Add a small pause between scenes
             if i < len(self.segments) - 1:
