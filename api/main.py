@@ -1,14 +1,13 @@
+from audio_utils import validate_audio_file, get_audio_duration
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from uuid import uuid4
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 from manim import *
 import tempfile
 import shutil
-
-from audio_validation import validate_audio_file
 
 app = FastAPI()
 
@@ -24,56 +23,79 @@ app.add_middleware(
 # Path to Next.js public/generated-videos directory
 VIDEOS_DIR = Path("../public/generated-videos")
 
-class Script(Scene):
+class SceneSegment:
     def __init__(self, text: str, audio_path: Optional[str] = None):
-        super().__init__()
         self.text = text
         self.audio_path = audio_path
         self.has_audio = audio_path is not None
+        self.duration = get_audio_duration(audio_path) if audio_path else 5.0
+
+class CombinedScript(Scene):
+    def __init__(self, segments: List[SceneSegment]):
+        super().__init__()
+        self.segments = segments
 
     def construct(self):
-        # Add the text animation
-        label = Text(self.text)
-        self.add(label)
-        
-        if self.has_audio:
-            try:
-                # Add the audio narration
-                self.add_sound(self.audio_path)
-                # Wait for the duration of the audio
-                self.wait()
-            except Exception as e:
-                # If audio fails, fall back to default duration
+        for i, segment in enumerate(self.segments):
+            # Clear the previous scene
+            self.remove(*self.mobjects)
+            
+            # Add the text animation for this segment
+            label = Text(segment.text)
+            self.add(label)
+            
+            if segment.has_audio:
+                try:
+                    # Add the audio narration and wait for its duration
+                    self.add_sound(segment.audio_path)
+                    self.wait(segment.duration)
+                except Exception as e:
+                    print(f"Audio playback failed for scene {i}: {e}")
+                    self.wait(5)  # Default 5 second duration
+            else:
+                # No audio, use default duration
                 self.wait(5)  # Default 5 second duration
-        else:
-            # No audio, use default duration
-            self.wait(5)  # Default 5 second duration
+            
+            # Add a small pause between scenes
+            if i < len(self.segments) - 1:
+                self.wait(0.25)
 
 @app.post("/generate-video")
 async def generate_video(
-    text: str = Form(...),
-    audio: Optional[UploadFile] = File(None)
+    texts: List[str] = Form(...),
+    audio_files: List[UploadFile] = File(...)
 ):
-    temp_audio_path = None
+    if len(texts) != len(audio_files):
+        raise HTTPException(status_code=400, detail="Number of texts must match number of audio files")
+
+    temp_files = []  # Track temporary files for cleanup
     try:
         # Create videos directory if it doesn't exist
         VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
         
-        # Generate unique filename using UUID
+        # Generate unique filename for final video
         video_filename = f"{uuid4()}.mp4"
         video_path = VIDEOS_DIR / video_filename
         
-        if audio:
+        # Save audio files to temp files
+        audio_paths = []
+        for audio in audio_files:
             # Validate audio file
             is_valid, error_message = validate_audio_file(audio)
             if not is_valid:
                 raise HTTPException(status_code=400, detail=error_message)
             
-            # Save valid audio to a temporary file
+            # Stream audio to temp file instead of loading it all into memory
             with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_audio:
-                audio_content = await audio.read()
-                temp_audio.write(audio_content)
-                temp_audio_path = temp_audio.name
+                shutil.copyfileobj(audio.file, temp_audio)
+                audio_paths.append(temp_audio.name)
+                temp_files.append(temp_audio.name)
+
+        # Create scene segments
+        segments = [
+            SceneSegment(text, audio_path)
+            for text, audio_path in zip(texts, audio_paths)
+        ]
 
         # Create a temporary directory for Manim output
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -82,8 +104,8 @@ async def generate_video(
             config.quality = "medium_quality"
             config.output_file = "animation"
             
-            # Create and render the scene with the provided text and optional audio
-            scene = Script(text, temp_audio_path)
+            # Create and render the combined scene
+            scene = CombinedScript(segments)
             scene.render()
             
             # Find the generated video
@@ -104,10 +126,10 @@ async def generate_video(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        # Clean up temp audio file if it exists
-        if temp_audio_path:
+        # Clean up all temporary files
+        for temp_file in temp_files:
             try:
-                Path(temp_audio_path).unlink()
+                Path(temp_file).unlink()
             except Exception:
                 pass  # Ignore cleanup errors
 
