@@ -3,16 +3,15 @@ interface VideoPlayerProps {
 }
 
 export default function VideoPlayer({ videoUrl }: VideoPlayerProps) {
+  // If videoUrl is just the filename, prepend the backend URL
+  const fullVideoUrl = videoUrl.startsWith('http') 
+    ? videoUrl 
+    : `http://localhost:8000/videos/${videoUrl}`;
+
   return (
-    <div className="w-full max-w-2xl rounded-lg overflow-hidden shadow-lg">
-      <video 
-        className="w-full"
-        controls
-        preload="metadata"
-      >
-        <source src={videoUrl} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-    </div>
+    <video controls className="max-w-full">
+      <source src={fullVideoUrl} type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
   );
 } 
