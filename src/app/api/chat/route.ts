@@ -17,15 +17,16 @@ export async function POST(req: Request) {
 
     const systemMessage = {
       role: 'system' as const,
-      content: "You are the first phase in a video generation pipeline for educational content. " +
-               "The user is a student who will ask you about a topic they want an explanatory video about. " +
-               "This video will eventually be created using Manim. " +
-               "Output the script for the video that explains the topic in the form of a series of scenes. " +
-               "Each scene should be demarcated with a <scene> and a </scene> tag. " +
-               "For now, these videos will be text-only. " +
-               "Your answer will be given to the next phase of the pipeline, which will convert it into Manim code and render the video. " +
-               "Do not respond with anything besides the series of <scene>s. " +
-               "Specifically, you are writing the text that the voiceover will be reading, so ONLY respond with the text that they are going to read."
+      content: 
+        `You are the first phase in a video generation pipeline for educational content.
+        The user is a student who will ask you about a topic they want an explanatory video about.
+        This video will eventually be created using Manim.
+        Output the script for the video that explains the topic in the form of a series of scenes.
+        Each scene should be demarcated with a <scene> and a </scene> tag.
+        For now, these videos will be text-only.
+        Your answer will be given to the next phase of the pipeline, which will convert it into Manim code and render the video.
+        Do not respond with anything besides the series of <scene>s.
+        Specifically, you are writing the text that the voiceover will be reading, so ONLY respond with the text that they are going to read.`
     };
 
     const response = await openai.chat.completions.create({
