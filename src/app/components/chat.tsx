@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChatMessage } from '../api/chat/route';
 import Message from './message';
 
@@ -7,6 +7,19 @@ export default function Chat() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        setDebugMode(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const generateText = async (messages: ChatMessage[]) => {
     const response = await fetch('/api/chat', {
@@ -99,9 +112,14 @@ export default function Chat() {
 
   return (
     <div className="absolute inset-0 flex flex-col">
+      {debugMode && (
+        <div className="bg-yellow-100 px-4 py-2 text-sm text-yellow-800">
+          Debug Mode Active (Ctrl/Cmd + D to toggle)
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.map((msg, index) => (
-          <Message key={index} message={msg} />
+          <Message key={index} message={msg} debugMode={debugMode} />
         ))}
         {isLoading && (
           <div className="flex justify-start">
