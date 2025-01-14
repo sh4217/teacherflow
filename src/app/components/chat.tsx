@@ -9,6 +9,38 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
 
+  // Track generated video filenames
+  const [videoFilenames, setVideoFilenames] = useState<string[]>([]);
+
+  // Cleanup videos on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (videoFilenames.length > 0) {
+        const jsonPayload = JSON.stringify(videoFilenames);
+
+        if (navigator.sendBeacon) {
+          // Use sendBeacon for reliable background cleanup
+          const blob = new Blob([jsonPayload], { type: 'application/json' });
+          navigator.sendBeacon('http://localhost:8000/delete/videos', blob);
+        } else {
+          // Fallback to fetch for DELETE
+          fetch('http://localhost:8000/delete/videos', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: jsonPayload,
+          }).catch(err => console.error('Fallback cleanup error:', err));
+        }
+      }
+    };
+  
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [videoFilenames]);
+
+  // Handle debug mode (Ctrl/Cmd + D)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
@@ -18,7 +50,10 @@ export default function Chat() {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const generateText = async (messages: ChatMessage[]) => {
@@ -75,13 +110,17 @@ export default function Chat() {
     });
     if (!response.ok) throw new Error('Failed to generate video');
     const data = await response.json();
+
+    // Add generated video filename to the list
+    setVideoFilenames(prev => [...prev, data.videoUrl]);
+
     return data.videoUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || isLoading) return;
-    
+
     const userMessage: ChatMessage = { role: 'user', content: message.trim() };
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setMessage('');
@@ -91,17 +130,15 @@ export default function Chat() {
       // Process in sequence: Text -> Speech -> Video
       const allMessages = [...messages, userMessage];
       const aiResponse = await generateText(allMessages);
-      
+
       // Generate video with scene-by-scene audio
-      const videoUrl = await generateVideo(
-        aiResponse.message.content
-      );
-      
+      const videoUrl = await generateVideo(aiResponse.message.content);
+
       const assistantMessage = {
         ...aiResponse.message,
-        videoUrl
+        videoUrl,
       };
-      
+
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
     } catch (error) {
       console.error('Error:', error);
@@ -129,7 +166,7 @@ export default function Chat() {
           </div>
         )}
       </div>
-      
+
       <form 
         onSubmit={handleSubmit}
         className="flex gap-4 p-4 border-t"
@@ -152,4 +189,4 @@ export default function Chat() {
       </form>
     </div>
   );
-} 
+}
