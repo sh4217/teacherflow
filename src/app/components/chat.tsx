@@ -12,13 +12,14 @@ export default function Chat() {
   // Track generated video filenames
   const [videoFilenames, setVideoFilenames] = useState<string[]>([]);
 
+  // Cleanup videos on page unload
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = () => {
       if (videoFilenames.length > 0) {
         const jsonPayload = JSON.stringify(videoFilenames);
-  
+
         if (navigator.sendBeacon) {
-          // Convert JSON payload to Blob with correct MIME type
+          // Use sendBeacon for reliable background cleanup
           const blob = new Blob([jsonPayload], { type: 'application/json' });
           navigator.sendBeacon('http://localhost:8000/delete/videos', blob);
         } else {
@@ -38,6 +39,22 @@ export default function Chat() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [videoFilenames]);
+
+  // Handle debug mode (Ctrl/Cmd + D)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        setDebugMode(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const generateText = async (messages: ChatMessage[]) => {
     const response = await fetch('/api/chat', {
