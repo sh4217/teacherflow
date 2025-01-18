@@ -1,4 +1,4 @@
-export default function UpArrowIcon() {
+export default function EnterIcon() {
   return (
     <svg
       width="24"

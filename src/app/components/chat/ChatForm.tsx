@@ -1,4 +1,4 @@
-import UpArrowIcon from '../icons/UpArrowIcon';
+import EnterIcon from '../icons/EnterIcon';
 
 interface ChatFormProps {
   message: string;
