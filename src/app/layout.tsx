@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Logo from "./components/Logo";
-import { Dancing_Script } from "next/font/google";
 import GradientBackground from "./components/GradientBackground";
-
-const dancingScript = Dancing_Script({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: "TeacherFlow",
