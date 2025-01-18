@@ -9,10 +9,10 @@ export function useVideoCleanup(videoFilenames: string[]) {
         if (navigator.sendBeacon) {
           // Use sendBeacon for reliable background cleanup
           const blob = new Blob([jsonPayload], { type: 'application/json' });
-          navigator.sendBeacon('http://localhost:8000/delete/videos', blob);
+          navigator.sendBeacon(`${process.env.NEXT_PUBLIC_BACKEND_URL}/delete/videos`, blob);
         } else {
           // Fallback to fetch for DELETE
-          fetch('http://localhost:8000/delete/videos', {
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/delete/videos`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: jsonPayload,
