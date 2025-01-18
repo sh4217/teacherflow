@@ -1,5 +1,6 @@
 import { ChatMessage } from '../../types/chat';
 import Message from '../message';
+import LoadingAnimation from '../LoadingAnimation';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -13,13 +14,7 @@ export default function ChatMessages({ messages, isLoading, debugMode }: ChatMes
       {messages.map((msg, index) => (
         <Message key={index} message={msg} debugMode={debugMode} />
       ))}
-      {isLoading && (
-        <div className="flex justify-start">
-          <div className="bg-gray-200 text-gray-800 rounded-lg rounded-bl-none px-4 py-2">
-            Thinking...
-          </div>
-        </div>
-      )}
+      {isLoading && <LoadingAnimation />}
     </div>
   );
 } 
