@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Logo from "./components/Logo";
+import { Dancing_Script } from "next/font/google";
+import GradientBackground from "./components/GradientBackground";
+
+const dancingScript = Dancing_Script({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: "TeacherFlow",
@@ -15,8 +19,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Logo />
-        {children}
+        <GradientBackground />
+        <nav className="h-20 flex items-center">
+          <Logo />
+        </nav>
+        <main>
+          {children}
+        </main>
       </body>
     </html>
   );

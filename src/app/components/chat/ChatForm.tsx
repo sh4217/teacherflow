@@ -13,7 +13,7 @@ export default function ChatForm({ message, setMessage, onSubmit, isLoading }: C
   return (
     <form 
       onSubmit={onSubmit}
-      className="flex p-4 border-t"
+      className="flex p-4"
     >
       <div className="flex-1 relative">
         <input
