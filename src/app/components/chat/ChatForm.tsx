@@ -1,3 +1,5 @@
+import UpArrowIcon from '../icons/UpArrowIcon';
+
 interface ChatFormProps {
   message: string;
   setMessage: (message: string) => void;
@@ -6,26 +8,32 @@ interface ChatFormProps {
 }
 
 export default function ChatForm({ message, setMessage, onSubmit, isLoading }: ChatFormProps) {
+  const hasText = message.trim().length > 0;
+
   return (
     <form 
       onSubmit={onSubmit}
-      className="flex gap-4 p-4 border-t"
+      className="flex p-4 border-t"
     >
-      <input
-        type="text"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="What do you want to learn?"
-        className="flex-1 rounded-lg border border-gray-300 p-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        disabled={isLoading}
-      />
-      <button
-        type="submit"
-        className="bg-blue-500 text-white px-6 py-4 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-300"
-        disabled={!message.trim() || isLoading}
-      >
-        Send
-      </button>
+      <div className="flex-1 relative">
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="What do you want to learn?"
+          className="w-full rounded-lg border border-gray-300 p-4 pr-12 focus:outline-none focus:ring-2 focus:ring-black"
+          disabled={isLoading}
+        />
+        {hasText && (
+          <button
+            type="submit"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-800 transition-colors disabled:bg-gray-300"
+            disabled={isLoading}
+          >
+            <UpArrowIcon />
+          </button>
+        )}
+      </div>
     </form>
   );
 } 
