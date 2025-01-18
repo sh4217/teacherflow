@@ -20,7 +20,7 @@ export default function ChatForm({ message, setMessage, onSubmit, isLoading }: C
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="What do you want to learn?"
+          placeholder="Bring your questions to life..."
           className="w-full rounded-lg border border-gray-300 p-4 pr-12 focus:outline-none focus:ring-2 focus:ring-black"
           disabled={isLoading}
         />
@@ -30,7 +30,7 @@ export default function ChatForm({ message, setMessage, onSubmit, isLoading }: C
             className="absolute right-2 top-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-800 transition-colors disabled:bg-gray-300"
             disabled={isLoading}
           >
-            <UpArrowIcon />
+            <EnterIcon />
           </button>
         )}
       </div>
