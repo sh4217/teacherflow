@@ -8,4 +8,4 @@ export default function Tagline() {
       Beautiful educational videos on any topic
     </h2>
   );
-} 
+}
