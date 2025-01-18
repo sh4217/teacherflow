@@ -28,7 +28,7 @@ export const generateVideo = async (text: string) => {
     formData.append('audio_files', audioBlobs[i], `scene_${i}.mp3`);
   });
 
-  const response = await fetch('http://localhost:8000/generate-video', {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/generate-video`, {
     method: 'POST',
     body: formData,
   });
