@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Logo from "./components/Logo";
 
 export const metadata: Metadata = {
   title: "TeacherFlow",
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <Logo />
         {children}
       </body>
     </html>
