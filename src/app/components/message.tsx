@@ -10,16 +10,16 @@ interface MessageProps {
 export default function Message({ message, debugMode }: MessageProps) {
   return (
     <div 
-      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+      className={`flex ${message.role === 'user' ? 'justify-center w-full' : 'justify-start'}`}
     >
       <div className="flex flex-col gap-2">
         {(message.role === 'user' || debugMode) && (
           <div 
             className={`
-              max-w-[80%] rounded-lg px-4 py-2
+              px-4 py-2
               ${message.role === 'user' 
-                ? 'bg-blue-500 text-white rounded-br-none' 
-                : 'bg-gray-200 text-gray-800 rounded-bl-none'}
+                ? 'text-gray-800 text-2xl' 
+                : 'max-w-[80%] bg-gray-200 text-gray-800 rounded-lg rounded-bl-none'}
             `}
           >
             {message.content}
