@@ -5,7 +5,11 @@ import GradientBackground from "./components/GradientBackground";
 
 export const metadata: Metadata = {
   title: "TeacherFlow",
-  description: "Automatic explanatory videos on any topic",
+  description: "Beautiful educational videos on any topic",
+  icons: {
+    icon: '/assets/favicon.ico',
+    apple: '/assets/apple-icon.png',
+  },
 };
 
 export default function RootLayout({
