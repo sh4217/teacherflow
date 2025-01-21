@@ -10,4 +10,4 @@ export default function SignInButton() {
       </ClerkSignInButton>
     </div>
   );
-} 
+}
