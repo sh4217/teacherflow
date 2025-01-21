@@ -1,5 +1,10 @@
 import { getUserSubscription } from './db';
 
+export enum SubscriptionStatus {
+  Free = 'free',
+  Pro = 'pro'
+}
+
 interface CacheEntry {
   isPro: boolean;
   expiresAt: number;
@@ -19,7 +24,7 @@ export async function checkUserSubscription(userId: string | null): Promise<bool
 
   try {
     const user = await getUserSubscription(userId);
-    const isPro = user?.subscription_status === 'pro';
+    const isPro = user?.subscription_status === SubscriptionStatus.Pro;
     
     // Update cache
     subscriptionCache.set(userId, {

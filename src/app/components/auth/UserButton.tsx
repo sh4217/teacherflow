@@ -35,6 +35,8 @@ const SubscriptionPage = () => {
           console.error('Failed to fetch subscription status:', error);
           if (isMounted) setIsPro(false);
         }
+      } else {
+        if (isMounted) setIsPro(false);
       }
     };
     checkSubscription();
