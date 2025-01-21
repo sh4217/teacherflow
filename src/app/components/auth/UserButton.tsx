@@ -1,7 +1,7 @@
 'use client'
 
 import { UserButton as ClerkUserButton, useUser } from '@clerk/nextjs';
-import { useEffect, useState } from 'react';
+import { useSubscription } from '@/app/context/subscription-context';
 
 const SubscriptionIcon = () => {
   return (
@@ -13,38 +13,7 @@ const SubscriptionIcon = () => {
 }
 
 const SubscriptionPage = () => {
-  const { user } = useUser();
-  const [isPro, setIsPro] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    const checkSubscription = async () => {
-      if (user?.id) {
-        try {
-          const response = await fetch('/api/subscription');
-          if (!response.ok) {
-            console.error('Subscription check failed:', response.statusText);
-            if (isMounted) setIsPro(false);
-            return;
-          }
-          const data = await response.json();
-          if (isMounted) {
-            setIsPro(data.isPro);
-          }
-        } catch (error) {
-          console.error('Failed to fetch subscription status:', error);
-          if (isMounted) setIsPro(false);
-        }
-      } else {
-        if (isMounted) setIsPro(false);
-      }
-    };
-    checkSubscription();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
+  const { isPro } = useSubscription();
 
   return (
     <div>

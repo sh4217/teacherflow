@@ -5,6 +5,7 @@ import GradientBackground from "./components/GradientBackground";
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/nextjs'
 import SignInButton from "./components/auth/SignInButton";
 import UserButton from "./components/auth/UserButton";
+import { SubscriptionProvider } from './context/subscription-context';
 
 export const metadata: Metadata = {
   title: "TeacherFlow",
@@ -22,25 +23,27 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body>
-          <GradientBackground />
-          <nav className="h-20 flex items-center justify-between px-4">
-            <Logo />
-            <div>
-              <SignedOut>
-                <SignInButton />
-              </SignedOut>
-              <SignedIn>
-                <UserButton />
-              </SignedIn>
-            </div>
-          </nav>
-          <main>
-            {children}
-          </main>
-        </body>
-      </html>
+      <SubscriptionProvider>
+        <html lang="en">
+          <body>
+            <GradientBackground />
+            <nav className="h-20 flex items-center justify-between px-4">
+              <Logo />
+              <div>
+                <SignedOut>
+                  <SignInButton />
+                </SignedOut>
+                <SignedIn>
+                  <UserButton />
+                </SignedIn>
+              </div>
+            </nav>
+            <main>
+              {children}
+            </main>
+          </body>
+        </html>
+      </SubscriptionProvider>
     </ClerkProvider>
   );
 }
