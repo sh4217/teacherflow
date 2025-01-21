@@ -1,6 +1,6 @@
 'use client'
 
-import { UserButton as ClerkUserButton, useUser } from '@clerk/nextjs';
+import { UserButton as ClerkUserButton } from '@clerk/nextjs';
 import { useSubscription } from '@/app/context/subscription-context';
 
 const SubscriptionIcon = () => {

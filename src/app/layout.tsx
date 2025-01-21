@@ -23,27 +23,27 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <SubscriptionProvider>
-        <html lang="en">
-          <body>
-            <GradientBackground />
-            <nav className="h-20 flex items-center justify-between px-4">
-              <Logo />
-              <div>
-                <SignedOut>
-                  <SignInButton />
-                </SignedOut>
-                <SignedIn>
+      <html lang="en">
+        <body>
+          <GradientBackground />
+          <nav className="h-20 flex items-center justify-between px-4">
+            <Logo />
+            <div>
+              <SignedOut>
+                <SignInButton />
+              </SignedOut>
+              <SignedIn>
+                <SubscriptionProvider>
                   <UserButton />
-                </SignedIn>
-              </div>
-            </nav>
-            <main>
-              {children}
-            </main>
-          </body>
-        </html>
-      </SubscriptionProvider>
+                </SubscriptionProvider>
+              </SignedIn>
+            </div>
+          </nav>
+          <main>
+            {children}
+          </main>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }

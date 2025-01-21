@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { checkUserSubscription } from '../lib/subscription';
 
 interface SubscriptionContextType {
   isPro: boolean | null;
