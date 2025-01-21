@@ -14,29 +14,42 @@ const SubscriptionIcon = () => {
 
 const SubscriptionPage = () => {
   const { user } = useUser();
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const checkSubscription = async () => {
       if (user?.id) {
         try {
           const response = await fetch('/api/subscription');
+          if (!response.ok) {
+            console.error('Subscription check failed:', response.statusText);
+            if (isMounted) setIsPro(false);
+            return;
+          }
           const data = await response.json();
-          if (response.ok) {
+          if (isMounted) {
             setIsPro(data.isPro);
           }
         } catch (error) {
           console.error('Failed to fetch subscription status:', error);
+          if (isMounted) setIsPro(false);
         }
       }
     };
     checkSubscription();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id]);
 
   return (
     <div>
       <h1>Subscription Status</h1>
-      <p>{isPro ? 'Pro' : 'Free'}</p>
+      {isPro !== null && (
+        <p>{isPro ? 'Pro' : 'Free'}</p>
+      )}
     </div>
   )
 }
