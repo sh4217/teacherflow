@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Logo from "./components/Logo";
 import GradientBackground from "./components/GradientBackground";
-import { ClerkProvider, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
-import SignInButton from "./components/SignInButton";
+import { ClerkProvider, SignedIn, SignedOut } from '@clerk/nextjs'
+import SignInButton from "./components/auth/SignInButton";
+import UserButton from "./components/auth/UserButton";
 
 export const metadata: Metadata = {
   title: "TeacherFlow",

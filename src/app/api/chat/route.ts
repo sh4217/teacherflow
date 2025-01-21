@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getUserSubscription } from '@/app/lib/db';
+import { checkUserSubscription } from '@/app/lib/subscription';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -25,9 +25,8 @@ export async function POST(req: Request) {
 
     const { messages }: { messages: ChatMessage[] } = await req.json();
     
-    // Check user's subscription status
-    const user = await getUserSubscription(userId);
-    const isPro = user?.subscription_status === 'pro';
+    // Check user's subscription status using shared utility
+    const isPro = await checkUserSubscription(userId);
     const model = isPro ? 'o1-mini-2024-09-12' : 'gpt-4o-2024-11-20';
 
     const systemPrompt = `You are the first phase in a video generation pipeline for educational content.
