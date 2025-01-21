@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Logo from "./components/Logo";
 import GradientBackground from "./components/GradientBackground";
+import { ClerkProvider, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
+import SignInButton from "./components/SignInButton";
 
 export const metadata: Metadata = {
   title: "TeacherFlow",
@@ -18,16 +20,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <GradientBackground />
-        <nav className="h-20 flex items-center">
-          <Logo />
-        </nav>
-        <main>
-          {children}
-        </main>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body>
+          <GradientBackground />
+          <nav className="h-20 flex items-center justify-between px-4">
+            <Logo />
+            <div>
+              <SignedOut>
+                <SignInButton />
+              </SignedOut>
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
+            </div>
+          </nav>
+          <main>
+            {children}
+          </main>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
