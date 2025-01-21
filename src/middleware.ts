@@ -1,7 +1,11 @@
 import { clerkMiddleware } from '@clerk/nextjs/server'
 
 export default clerkMiddleware({
-    authorizedParties: ["https://teacherflow.ai", "http://localhost:3000"]
+    authorizedParties: [
+        "https://teacherflow.ai",
+        "https://www.teacherflow.ai",
+        "http://localhost:3000"
+    ]
 })
 
 export const config = {
