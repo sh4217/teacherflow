@@ -11,12 +11,6 @@ async function handleUserCreated(id: string) {
     return NextResponse.json({ message: 'User created successfully' });
   } catch (error) {
     console.error('Error creating user:', error);
-    if (error instanceof Error && error.message === 'User not found') {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
     return NextResponse.json(
       {
         error: 'Failed to create user',
@@ -28,27 +22,27 @@ async function handleUserCreated(id: string) {
 }
 
 async function handleUserDeleted(id: string) {
-  try {
-    console.log('Deleting user with Clerk ID:', id);
-    await deleteUser(id);
-    return NextResponse.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    if (error instanceof Error && error.message === 'User not found') {
+    try {
+      console.log('Deleting user with Clerk ID:', id);
+      await deleteUser(id);
+      return NextResponse.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      if (error instanceof Error && error.message === 'User not found') {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
+        {
+          error: 'Failed to delete user',
+          details: error instanceof Error ? error.message : String(error)
+        },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      {
-        error: 'Failed to delete user',
-        details: error instanceof Error ? error.message : String(error)
-      },
-      { status: 500 }
-    );
   }
-}
 
 export async function POST(req: Request) {
   // Get the headers
