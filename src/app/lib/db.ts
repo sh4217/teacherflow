@@ -45,10 +45,11 @@ export async function createUser(clerkId: string) {
     await db.sql`
       INSERT INTO users (clerk_id, subscription_status)
       VALUES (${clerkId}, 'free')
+      ON CONFLICT (clerk_id) DO NOTHING
     `;
-    console.log('User created successfully');
+    console.log('User creation handled successfully');
   } catch (error) {
-    console.error('Error creating user:', error);
+    console.error('Error in user creation:', error);
     throw error;
   }
 }
