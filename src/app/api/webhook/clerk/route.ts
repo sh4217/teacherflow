@@ -11,6 +11,12 @@ async function handleUserCreated(id: string) {
     return NextResponse.json({ message: 'User created successfully' });
   } catch (error) {
     console.error('Error creating user:', error);
+    if (error instanceof Error && error.message === 'User not found') {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
       {
         error: 'Failed to create user',
@@ -28,6 +34,12 @@ async function handleUserDeleted(id: string) {
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
+    if (error instanceof Error && error.message === 'User not found') {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
       {
         error: 'Failed to delete user',
