@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { sql } from '@vercel/postgres';
 import { NextRequest } from 'next/server';
 
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, stripe: Stripe) {
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
     console.log('Starting handleCheckoutSessionCompleted');
     console.log('Session:', JSON.stringify(session, null, 2));
     
@@ -42,7 +42,6 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
       console.log('Database update successful');
     } catch (error) {
       console.error('Database error:', error);
-      throw error;
     }
   }
 
@@ -130,7 +129,7 @@ export async function POST(req: NextRequest) {
     // Handle different subscription events
     switch (event.type) {
       case 'checkout.session.completed': {
-        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session, stripe);
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
         break;
       }
 
