@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { checkUserSubscription } from '@/app/lib/subscription';
+import { getUserSubscription } from '@/app/lib/db';
 
 export async function GET() {
   try {
@@ -12,8 +12,10 @@ export async function GET() {
       );
     }
 
-    const isPro = await checkUserSubscription(userId);
-    return NextResponse.json({ isPro });
+    const user = await getUserSubscription(userId);
+    return NextResponse.json({ 
+      subscription_status: user?.subscription_status || 'free' 
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

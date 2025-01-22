@@ -69,3 +69,25 @@ export async function deleteUser(clerkId: string) {
     throw error;
   }
 }
+
+export async function updateUser(clerkId: string, newStatus: 'free' | 'pro') {
+  try {
+    const { rowCount } = await db.sql`
+      UPDATE users 
+      SET subscription_status = ${newStatus},
+          updated_at = CURRENT_TIMESTAMP
+      WHERE clerk_id = ${clerkId}
+      RETURNING *
+    `;
+    
+    if (rowCount === 0) {
+      throw new Error('User not found');
+    }
+    
+    console.log('User subscription status updated successfully');
+    return true;
+  } catch (error) {
+    console.error('Error updating user subscription:', error);
+    throw error;
+  }
+}
