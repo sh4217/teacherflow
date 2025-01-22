@@ -40,9 +40,20 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           updated_at = NOW()
       `;
       console.log('Database update successful');
+      return new Response(
+        JSON.stringify({ message: 'Subscription updated successfully' }), 
+        { status: 200 }
+      );
     } catch (error) {
-      console.error('Database error:', error);
-    }
+        console.error('Database error:', error);
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to update subscription status',
+            details: error instanceof Error ? error.message : String(error)
+          }),
+          { status: 500 }
+        );
+      }
   }
 
 // TO DO: incorporate logic for updating and cancelling subscriptions
@@ -148,17 +159,39 @@ export async function POST(req: NextRequest) {
       status: 200,
     });
 
-  } catch (err) {
-    const error = err as Error;
-    console.error('Webhook error:', error.message);
-    return new Response(
-      JSON.stringify({
-        error: 'Webhook handler failed',
-        message: error.message,
-      }),
-      {
-        status: 400,
-      }
-    );
-  }
+    } catch (err) {
+        const error = err as Error;
+        console.error('Webhook error:', error.message);
+        
+        // Stripe signature verification errors are client errors
+        if (error.message.includes('signature')) {
+            return new Response(
+                JSON.stringify({
+                    error: 'Invalid webhook signature',
+                    message: error.message,
+                }),
+                { status: 400 }
+            );
+        }
+        
+        // Database errors are server errors
+        if (error.message.includes('database') || error.message.includes('sql')) {
+            return new Response(
+                JSON.stringify({
+                    error: 'Internal server error',
+                    message: 'Database operation failed',
+                }),
+                { status: 500 }
+            );
+        }
+        
+        // Default to 500 for unexpected errors
+        return new Response(
+            JSON.stringify({
+                error: 'Internal server error',
+                message: 'An unexpected error occurred',
+            }),
+            { status: 500 }
+        );
+    }
 }
