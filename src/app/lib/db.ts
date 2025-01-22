@@ -39,3 +39,17 @@ export async function getUserSubscription(clerkId: string) {
     throw error;
   }
 }
+
+export async function createUser(clerkId: string) {
+  try {
+    await db.sql`
+      INSERT INTO users (clerk_id, subscription_status)
+      VALUES (${clerkId}, 'free')
+      ON CONFLICT (clerk_id) DO NOTHING
+    `;
+    console.log('User creation handled successfully');
+  } catch (error) {
+    console.error('Error in user creation:', error);
+    throw error;
+  }
+}
