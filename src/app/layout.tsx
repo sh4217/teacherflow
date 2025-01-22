@@ -6,6 +6,7 @@ import { ClerkProvider, SignedIn, SignedOut } from '@clerk/nextjs'
 import SignInButton from "./components/auth/SignInButton";
 import UserButton from "./components/auth/UserButton";
 import { SubscriptionProvider } from './context/subscription-context';
+import SubscriptionButton from "./components/auth/SubscriptionButton";
 
 export const metadata: Metadata = {
   title: "TeacherFlow",
@@ -28,12 +29,13 @@ export default function RootLayout({
           <GradientBackground />
           <nav className="h-20 flex items-center justify-between px-4">
             <Logo />
-            <div>
+            <div className="flex gap-2 items-center">
               <SignedOut>
                 <SignInButton />
               </SignedOut>
               <SignedIn>
                 <SubscriptionProvider>
+                  <SubscriptionButton />
                   <UserButton />
                 </SubscriptionProvider>
               </SignedIn>

@@ -13,13 +13,13 @@ const SubscriptionIcon = () => {
 }
 
 const SubscriptionPage = () => {
-  const { isPro } = useSubscription();
+  const { subscription } = useSubscription();
 
   return (
     <div>
       <h1>Subscription Status</h1>
-      {isPro !== null && (
-        <p>{isPro ? 'Pro' : 'Free'}</p>
+      {subscription !== null && (
+        <p>{subscription === 'pro' ? 'Pro' : 'Free'}</p>
       )}
     </div>
   )
