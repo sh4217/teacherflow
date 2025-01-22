@@ -53,3 +53,19 @@ export async function createUser(clerkId: string) {
     throw error;
   }
 }
+
+export async function deleteUser(clerkId: string) {
+  try {
+    const { rowCount } = await db.sql`
+      DELETE FROM users WHERE clerk_id = ${clerkId}
+    `;
+    if (rowCount === 0) {
+      throw new Error('User not found');
+    }
+    console.log('User deleted successfully');
+    return true;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
+}
