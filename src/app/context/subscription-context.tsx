@@ -53,4 +53,4 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
 export function useSubscription() {
   return useContext(SubscriptionContext);
-} 
+}
