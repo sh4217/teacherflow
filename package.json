@@ -16,6 +16,7 @@
     "openai": "^4.77.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "stripe": "^17.5.0",
     "svix": "^1.45.1"
   },
   "devDependencies": {
