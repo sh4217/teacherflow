@@ -1,13 +1,23 @@
 import Stripe from 'stripe';
 import { auth } from '@clerk/nextjs/server';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is not defined');
-}
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 export async function POST() {
   try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'Stripe secret key is not configured' }), 
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.STRIPE_PRICE_ID) {
+      return new Response(
+        JSON.stringify({ error: 'Stripe price ID is not configured' }), 
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const { userId } = await auth();
     
     if (!userId) {
