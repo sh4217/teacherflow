@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { User } from '@/app/lib/db';
 
 interface SubscriptionContextType {
   subscription: 'free' | 'pro' | null;
