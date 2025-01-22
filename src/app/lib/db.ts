@@ -39,3 +39,16 @@ export async function getUserSubscription(clerkId: string) {
     throw error;
   }
 }
+
+export async function createUser(clerkId: string) {
+  try {
+    await db.sql`
+      INSERT INTO users (clerk_id, subscription_status)
+      VALUES (${clerkId}, 'free')
+    `;
+    console.log('User created successfully');
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+}
