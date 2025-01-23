@@ -16,9 +16,17 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
 });
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user, isLoaded: isUserLoaded, isSignedIn } = useUser();
   const [subscription, setSubscription] = useState<'free' | 'pro' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Immediately clear subscription when user signs out
+  useEffect(() => {
+    if (isUserLoaded && !isSignedIn) {
+      setSubscription(null);
+      setIsLoading(false);
+    }
+  }, [isUserLoaded, isSignedIn]);
 
   const checkSubscription = async () => {
     if (!isUserLoaded) return;
@@ -45,8 +53,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   };
 
   useEffect(() => {
-    checkSubscription();
-  }, [user?.id, isUserLoaded]);
+    if (isSignedIn) {
+      checkSubscription();
+    }
+  }, [user?.id, isUserLoaded, isSignedIn]);
 
   return (
     <SubscriptionContext.Provider value={{ 
