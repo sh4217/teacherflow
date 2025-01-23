@@ -18,9 +18,23 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       );
     }
 
+    // Get the customer ID from the session
+    const stripeCustomerId = typeof session.customer === 'string' 
+      ? session.customer 
+      : session.customer?.id;
+    console.log('Stripe Customer ID:', stripeCustomerId);
+
+    if (!stripeCustomerId) {
+      console.log('No Stripe customer ID found');
+      return new Response(
+        JSON.stringify({ error: 'No Stripe customer ID found in session' }), 
+        { status: 400 }
+      );
+    }
+
     // Update database with pro subscription status
-    console.log('Attempting database update for user:', clerkUserId);
-    return await updateUser(clerkUserId, 'pro');
+    console.log('Attempting database update for user: ', clerkUserId);
+    return await updateUser(clerkUserId, 'pro', stripeCustomerId);
 }
 
 // TO DO: incorporate logic for updating and cancelling subscriptions
