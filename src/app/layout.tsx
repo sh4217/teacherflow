@@ -6,8 +6,7 @@ import { ClerkProvider, SignedIn, SignedOut } from '@clerk/nextjs'
 import SignInButton from "./components/auth/SignInButton";
 import UserButton from "./components/auth/UserButton";
 import { SubscriptionProvider } from './context/subscription-context';
-import SubscriptionButton from "./components/auth/SubscriptionButton";
-import StripeButton from "./components/payment/StripeButton";
+import SubscribeButton from "./components/payment/SubscribeButton";
 
 export const metadata: Metadata = {
   title: "TeacherFlow",
@@ -36,8 +35,7 @@ export default function RootLayout({
               </SignedOut>
               <SignedIn>
                 <SubscriptionProvider>
-                  <StripeButton />
-                  <SubscriptionButton />
+                  <SubscribeButton />
                   <UserButton />
                 </SubscriptionProvider>
               </SignedIn>
