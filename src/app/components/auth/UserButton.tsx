@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react';
 import { UserButton as ClerkUserButton } from '@clerk/nextjs';
 import { useSubscription } from '@/app/context/subscription-context';
 
@@ -12,17 +13,52 @@ const SubscriptionIcon = () => {
   )
 }
 
-const SubscriptionPage = () => {
+const SubscriptionTab = () => {
+  const [loading, setLoading] = useState(false);
   const { subscription } = useSubscription();
 
+  const handleManageSubscription = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/stripe/customer', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create portal session');
+      }
+
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div>
-      <h1>Subscription Status</h1>
-      {subscription !== null && (
-        <p>{subscription === 'pro' ? 'Pro' : 'Free'}</p>
+    <div className="p-4">
+      <h2 className="text-lg font-semibold mb-4">Subscription Status</h2>
+      <p className="mb-4">
+        You are currently on the <span className="font-medium">{subscription === 'pro' ? 'Pro' : 'Free'}</span> plan
+      </p>
+      
+      <button
+        onClick={handleManageSubscription}
+        disabled={loading || subscription === 'free'}
+        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+      >
+        {loading ? 'Loading...' : 'Manage Subscription'}
+      </button>
+      
+      {subscription === 'free' && (
+        <p className="mt-2 text-sm text-gray-600">
+          * You need to be subscribed to access the subscription management portal
+        </p>
       )}
     </div>
-  )
+  );
 }
 
 export default function UserButton() {
@@ -33,7 +69,7 @@ export default function UserButton() {
         url="user-profile" 
         labelIcon={<SubscriptionIcon />}
       >
-        <SubscriptionPage />
+        <SubscriptionTab />
       </ClerkUserButton.UserProfilePage>
     </ClerkUserButton>
   );

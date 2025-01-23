@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getUserSubscription } from '@/app/lib/db';
+import { getUserFromTable } from '@/app/lib/db';
 
 export async function GET() {
   try {
@@ -12,7 +12,7 @@ export async function GET() {
       );
     }
 
-    const user = await getUserSubscription(userId);
+    const user = await getUserFromTable(userId);
     return NextResponse.json({ 
       subscription_status: user?.subscription_status || 'free' 
     });

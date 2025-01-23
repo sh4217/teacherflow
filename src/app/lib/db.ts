@@ -40,7 +40,7 @@ export async function createUsersTable() {
   }
 }
 
-export async function getUserSubscription(clerkId: string) {
+export async function getUserFromTable(clerkId: string) {
   try {
     const { rows } = await db.sql`
       SELECT * FROM users WHERE clerk_id = ${clerkId}
