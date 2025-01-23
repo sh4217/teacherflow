@@ -25,6 +25,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (isUserLoaded && !isSignedIn) {
       setSubscription(null);
       setIsLoading(false);
+      
+      // Clean up any lingering Clerk modal overlay
+      const modalBackdrop = document.querySelector('.cl-modalBackdrop');
+      if (modalBackdrop) {
+        modalBackdrop.remove();
+      }
     }
   }, [isUserLoaded, isSignedIn]);
 
