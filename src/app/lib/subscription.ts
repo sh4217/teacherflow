@@ -1,4 +1,4 @@
-import { getUserSubscription } from './db';
+import { getUserFromTable } from './db';
 
 export enum SubscriptionStatus {
   Free = 'free',
@@ -9,7 +9,7 @@ export async function checkUserSubscription(userId: string | null): Promise<bool
   if (!userId) return false;
   
   try {
-    const user = await getUserSubscription(userId);
+    const user = await getUserFromTable(userId);
     return user?.subscription_status === SubscriptionStatus.Pro;
   } catch (error) {
     console.error('Error checking user subscription:', error);

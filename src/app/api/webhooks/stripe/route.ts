@@ -19,7 +19,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     }
 
     // Get the customer ID from the session
-    const stripeCustomerId = typeof session.customer === 'string' 
+    const stripeCustomerId = typeof session.customer === 'string'
       ? session.customer 
       : session.customer?.id;
     console.log('Stripe Customer ID:', stripeCustomerId);
