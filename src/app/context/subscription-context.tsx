@@ -5,19 +5,25 @@ import { useUser } from '@clerk/nextjs';
 
 interface SubscriptionContextType {
   subscription: 'free' | 'pro' | null;
+  isLoading: boolean;
   refreshSubscription: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
   subscription: null,
+  isLoading: true,
   refreshSubscription: async () => {},
 });
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useUser();
+  const { user, isLoaded: isUserLoaded } = useUser();
   const [subscription, setSubscription] = useState<'free' | 'pro' | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const checkSubscription = async () => {
+    if (!isUserLoaded) return;
+    
+    setIsLoading(true);
     if (user?.id) {
       try {
         const response = await fetch('/api/subscription');
@@ -35,15 +41,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } else {
       setSubscription('free');
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {
     checkSubscription();
-  }, [user?.id]);
+  }, [user?.id, isUserLoaded]);
 
   return (
     <SubscriptionContext.Provider value={{ 
       subscription, 
+      isLoading,
       refreshSubscription: checkSubscription 
     }}>
       {children}
