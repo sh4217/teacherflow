@@ -5,6 +5,7 @@ export interface User {
   subscription_status: 'free' | 'pro';
   created_at: Date;
   updated_at: Date;
+  stripe_customer_id: string | null;
 }
 
 const db = createPool({
@@ -18,7 +19,8 @@ export async function createUsersTable() {
         clerk_id TEXT PRIMARY KEY,
         subscription_status TEXT NOT NULL DEFAULT 'free',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        stripe_customer_id TEXT UNIQUE
       );
     `;
     console.log('Users table created successfully');
@@ -53,8 +55,8 @@ export async function getUserSubscription(clerkId: string) {
 export async function createUser(clerkId: string) {
   try {
     await db.sql`
-      INSERT INTO users (clerk_id, subscription_status)
-      VALUES (${clerkId}, 'free')
+      INSERT INTO users (clerk_id, subscription_status, created_at, updated_at, stripe_customer_id)
+      VALUES (${clerkId}, 'free', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)
       ON CONFLICT (clerk_id) DO NOTHING
     `;
     console.log('User creation handled successfully');
@@ -102,12 +104,13 @@ export async function deleteUser(clerkId: string) {
   }
 }
 
-export async function updateUser(clerkId: string, newStatus: 'free' | 'pro') {
+export async function updateUser(clerkId: string, newStatus: 'free' | 'pro', stripeCustomerId: string) {
   try {
     const { rowCount } = await db.sql`
       UPDATE users 
       SET subscription_status = ${newStatus},
-          updated_at = CURRENT_TIMESTAMP
+          updated_at = CURRENT_TIMESTAMP,
+          stripe_customer_id = ${stripeCustomerId}
       WHERE clerk_id = ${clerkId}
       RETURNING *
     `;
