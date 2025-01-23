@@ -39,6 +39,7 @@ export async function POST() {
       ],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}`,
+      payment_method_types: ['card']
     });
 
     return new Response(
