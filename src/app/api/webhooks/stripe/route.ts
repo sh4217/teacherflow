@@ -63,22 +63,40 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const stripeCustomerId = subscription.customer as string;
-  if (!stripeCustomerId) {
-    console.log('No Stripe customer ID found');
+
+  try {
+    const { rowCount } = await sql`
+      UPDATE users 
+      SET 
+        subscription_status = 'free',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE stripe_customer_id = ${stripeCustomerId}
+      RETURNING *
+    `;
+
+    if (rowCount === 0) {
+      console.log('No user found with stripe customer ID:', stripeCustomerId);
+      return new Response(
+        JSON.stringify({ error: 'User not found' }), 
+        { status: 404 }
+      );
+    }
+
+    console.log('User subscription status updated successfully');
     return new Response(
-      JSON.stringify({ error: 'No Stripe customer ID found in session' }), 
-      { status: 400 }
+      JSON.stringify({ message: 'Subscription canceled successfully' }), 
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error updating user subscription: ', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to update subscription status',
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { status: 500 }
     );
   }
-
-  // Update subscription status to 'free' in database using stripe_customer_id
-  await sql`
-    UPDATE users 
-    SET 
-      subscription_status = 'free',
-      updated_at = CURRENT_TIMESTAMP
-    WHERE stripe_customer_id = ${stripeCustomerId}
-  `;
 }
 
 export async function POST(req: NextRequest) {
