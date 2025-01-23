@@ -22,9 +22,19 @@ export async function createUsersTable() {
       );
     `;
     console.log('Users table created successfully');
+    return new Response(
+      JSON.stringify({ message: 'Users table created successfully' }), 
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error creating users table:', error);
-    throw error;
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to create users table',
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { status: 500 }
+    );
   }
 }
 
@@ -33,10 +43,25 @@ export async function getUserSubscription(clerkId: string) {
     const { rows } = await db.sql`
       SELECT * FROM users WHERE clerk_id = ${clerkId}
     `;
-    return rows[0] as User | undefined;
+    if (rows.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'User not found' }), 
+        { status: 404 }
+      );
+    }
+    return new Response(
+      JSON.stringify({ user: rows[0] }), 
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Error fetching user:', error);
-    throw error;
+    console.error('Error fetching user: ', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to fetch user subscription',
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { status: 500 }
+    );
   }
 }
 
@@ -48,9 +73,19 @@ export async function createUser(clerkId: string) {
       ON CONFLICT (clerk_id) DO NOTHING
     `;
     console.log('User creation handled successfully');
+    return new Response(
+      JSON.stringify({ message: 'User created successfully' }), 
+      { status: 201 }
+    );
   } catch (error) {
-    console.error('Error in user creation:', error);
-    throw error;
+    console.error('Error in user creation: ', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to create user',
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { status: 500 }
+    );
   }
 }
 
@@ -60,13 +95,25 @@ export async function deleteUser(clerkId: string) {
       DELETE FROM users WHERE clerk_id = ${clerkId}
     `;
     if (rowCount === 0) {
-      throw new Error('User not found');
+      return new Response(
+        JSON.stringify({ error: 'User not found' }), 
+        { status: 404 }
+      );
     }
     console.log('User deleted successfully');
-    return true;
+    return new Response(
+      JSON.stringify({ message: 'User deleted successfully' }), 
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Error deleting user:', error);
-    throw error;
+    console.error('Error deleting user: ', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to delete user',
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { status: 500 }
+    );
   }
 }
 
@@ -81,13 +128,25 @@ export async function updateUser(clerkId: string, newStatus: 'free' | 'pro') {
     `;
     
     if (rowCount === 0) {
-      throw new Error('User not found');
+      return new Response(
+        JSON.stringify({ error: 'User not found' }), 
+        { status: 404 }
+      );
     }
     
     console.log('User subscription status updated successfully');
-    return true;
+    return new Response(
+      JSON.stringify({ message: 'Subscription updated successfully' }), 
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Error updating user subscription:', error);
-    throw error;
+    console.error('Error updating user subscription: ', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to update subscription status',
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { status: 500 }
+    );
   }
 }
