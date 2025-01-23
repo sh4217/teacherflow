@@ -5,8 +5,13 @@ import { useSubscription } from '@/app/context/subscription-context';
 
 export default function SubscribeButton() {
   const [loading, setLoading] = useState(false);
-  const { subscription } = useSubscription();
+  const { subscription, isLoading } = useSubscription();
   const isSubscribed = subscription === 'pro';
+
+  // Don't render anything while subscription status or user is loading
+  if (isLoading || subscription === null) {
+    return null;
+  }
 
   const handleSubscribe = async () => {
     if (isSubscribed) return;
