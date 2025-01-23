@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { UserButton as ClerkUserButton } from '@clerk/nextjs';
 import { useSubscription } from '@/app/context/subscription-context';
+import SubscribeButton from '../payment/SubscribeButton';
 
 const SubscriptionIcon = () => {
   return (
@@ -44,7 +45,7 @@ const SubscriptionTab = () => {
         You are currently on the <span className="font-medium">{subscription === 'pro' ? 'Pro' : 'Free'}</span> plan
       </p>
       
-      {subscription === 'pro' && (
+      {subscription === 'pro' ? (
         <button
           onClick={handleManageSubscription}
           disabled={loading}
@@ -52,6 +53,8 @@ const SubscriptionTab = () => {
         >
           Manage Subscription
         </button>
+      ) : (
+        <SubscribeButton />
       )}
     </div>
   );
