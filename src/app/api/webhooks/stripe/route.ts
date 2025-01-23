@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import { NextRequest } from 'next/server';
 import { updateUser } from '@/app/lib/db';
+import { sql } from '@vercel/postgres';
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
     console.log('Starting handleCheckoutSessionCompleted');
@@ -60,27 +61,43 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 //   `;
 // }
 
-// async function handleSubscriptionDeleted(subscription: Stripe.Subscription, stripe: Stripe) {
-//   // Get the Clerk user ID from customer metadata
-//   const customer = await stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer;
-//   const clerkUserId = customer.metadata?.clerk_user_id;
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const stripeCustomerId = subscription.customer as string;
 
-//   if (!clerkUserId) {
-//     return new Response(
-//       JSON.stringify({ error: 'No Clerk user ID found in customer metadata' }), 
-//       { status: 400 }
-//     );
-//   }
+  try {
+    const { rowCount } = await sql`
+      UPDATE users 
+      SET 
+        subscription_status = 'free',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE stripe_customer_id = ${stripeCustomerId}
+      RETURNING *
+    `;
 
-//   // Update subscription status to 'canceled' in database
-//   await sql`
-//     UPDATE user_subscriptions 
-//     SET 
-//       subscription_status = 'canceled',
-//       updated_at = NOW()
-//     WHERE clerk_id = ${clerkUserId}
-//   `;
-// }
+    if (rowCount === 0) {
+      console.log('No user found with stripe customer ID:', stripeCustomerId);
+      return new Response(
+        JSON.stringify({ error: 'User not found' }), 
+        { status: 404 }
+      );
+    }
+
+    console.log('User subscription status updated successfully');
+    return new Response(
+      JSON.stringify({ message: 'Subscription canceled successfully' }), 
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error updating user subscription: ', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to update subscription status',
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -130,10 +147,10 @@ export async function POST(req: NextRequest) {
     //     break;
     //   }
 
-    //   case 'customer.subscription.deleted': {
-    //     await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, stripe);
-    //     break;
-    //   }
+      case 'customer.subscription.deleted': {
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        break;
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {
