@@ -43,25 +43,10 @@ export async function getUserSubscription(clerkId: string) {
     const { rows } = await db.sql`
       SELECT * FROM users WHERE clerk_id = ${clerkId}
     `;
-    if (rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'User not found' }), 
-        { status: 404 }
-      );
-    }
-    return new Response(
-      JSON.stringify({ user: rows[0] }), 
-      { status: 200 }
-    );
+    return rows[0] as User | undefined;
   } catch (error) {
-    console.error('Error fetching user: ', error);
-    return new Response(
-      JSON.stringify({
-        error: 'Failed to fetch user subscription',
-        details: error instanceof Error ? error.message : String(error)
-      }),
-      { status: 500 }
-    );
+    console.error('Error fetching user:', error);
+    throw error;
   }
 }
 
