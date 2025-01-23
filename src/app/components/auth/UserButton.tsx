@@ -44,18 +44,14 @@ const SubscriptionTab = () => {
         You are currently on the <span className="font-medium">{subscription === 'pro' ? 'Pro' : 'Free'}</span> plan
       </p>
       
-      <button
-        onClick={handleManageSubscription}
-        disabled={loading || subscription === 'free'}
-        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? 'Loading...' : 'Manage Subscription'}
-      </button>
-      
-      {subscription === 'free' && (
-        <p className="mt-2 text-sm text-gray-600">
-          * You need to be subscribed to access the subscription management portal
-        </p>
+      {subscription === 'pro' && (
+        <button
+          onClick={handleManageSubscription}
+          disabled={loading}
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          Manage Subscription
+        </button>
       )}
     </div>
   );
