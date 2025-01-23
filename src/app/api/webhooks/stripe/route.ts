@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
-import { sql } from '@vercel/postgres';
 import { NextRequest } from 'next/server';
+import { updateUser } from '@/app/lib/db';
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
     console.log('Starting handleCheckoutSessionCompleted');
@@ -17,44 +17,11 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         { status: 400 }
       );
     }
-    
-    try {
-      // Update database with pro subscription status
-      console.log('Attempting database update for user:', clerkUserId);
-      await sql`
-        INSERT INTO users (
-          clerk_id, 
-          subscription_status, 
-          created_at, 
-          updated_at
-        ) 
-        VALUES (
-          ${clerkUserId}, 
-          'pro', 
-          NOW(), 
-          NOW()
-        )
-        ON CONFLICT (clerk_id) 
-        DO UPDATE SET 
-          subscription_status = 'pro',
-          updated_at = NOW()
-      `;
-      console.log('Database update successful');
-      return new Response(
-        JSON.stringify({ message: 'Subscription updated successfully' }), 
-        { status: 200 }
-      );
-    } catch (error) {
-        console.error('Database error:', error);
-        return new Response(
-          JSON.stringify({
-            error: 'Failed to update subscription status',
-            details: error instanceof Error ? error.message : String(error)
-          }),
-          { status: 500 }
-        );
-      }
-  }
+
+    // Update database with pro subscription status
+    console.log('Attempting database update for user:', clerkUserId);
+    return await updateUser(clerkUserId, 'pro');
+}
 
 // TO DO: incorporate logic for updating and cancelling subscriptions
 // async function handleSubscriptionUpdated(subscription: Stripe.Subscription, stripe: Stripe) {
