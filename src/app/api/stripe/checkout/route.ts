@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { auth } from '@clerk/nextjs/server';
+import { getUserFromTable } from '@/app/lib/db';
 
 export async function POST() {
   try {
@@ -27,8 +28,11 @@ export async function POST() {
       );
     }
 
-    // Create a Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Get user data to check for existing Stripe customer ID
+    const user = await getUserFromTable(userId);
+
+    // Create session configuration
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       client_reference_id: userId,
       mode: 'subscription',
       line_items: [
@@ -40,7 +44,15 @@ export async function POST() {
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}`,
       payment_method_types: ['card']
-    });
+    };
+
+    // If user has an existing Stripe customer ID, include it
+    if (user?.stripe_customer_id) {
+      sessionConfig.customer = user.stripe_customer_id;
+    }
+
+    // Create a Stripe checkout session
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return new Response(
       JSON.stringify({ url: session.url }), 
