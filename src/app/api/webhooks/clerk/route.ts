@@ -1,8 +1,9 @@
+import Stripe from 'stripe';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 import { WebhookEvent } from '@clerk/nextjs/server';
-import { createUser, deleteUser } from '@/app/lib/db';
+import { createUser, deleteUser, getUserFromTable } from '@/app/lib/db';
 
 async function handleUserCreated(id: string) {
   try {
@@ -22,27 +23,45 @@ async function handleUserCreated(id: string) {
 }
 
 async function handleUserDeleted(id: string) {
-    try {
-      console.log('Deleting user with Clerk ID:', id);
-      await deleteUser(id);
-      return NextResponse.json({ message: 'User deleted successfully' });
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      if (error instanceof Error && error.message === 'User not found') {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
+  try {
+    console.log('Checking for subscription status before deleting user');
+    const user = await getUserFromTable(id);
+    const subscriptionId = user?.subscription_id;
+    if (subscriptionId) {
+      if (!process.env.STRIPE_SECRET_KEY) {
+        throw new Error('Stripe secret key is not configured');
       }
+
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      
+      try {
+        await stripe.subscriptions.cancel(subscriptionId);
+        console.log('Successfully cancelled Stripe subscription');
+      } catch (stripeError) {
+        console.error('Error cancelling Stripe subscription:', stripeError);
+      }
+    }
+
+    console.log('Deleting user with Clerk ID:', id);
+    await deleteUser(id);
+    return NextResponse.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    if (error instanceof Error && error.message === 'User not found') {
       return NextResponse.json(
-        {
-          error: 'Failed to delete user',
-          details: error instanceof Error ? error.message : String(error)
-        },
-        { status: 500 }
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
+    return NextResponse.json(
+      {
+        error: 'Failed to delete user',
+        details: error instanceof Error ? error.message : String(error)
+      },
+      { status: 500 }
+    );
   }
+}
 
 export async function POST(req: Request) {
   // Get the headers
