@@ -33,33 +33,22 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       );
     }
 
+    // Get the subscription ID from the session
+    const subscriptionId = session.subscription as string;
+    console.log('Subscription ID:', subscriptionId);
+
+    if (!subscriptionId) {
+      console.log('No subscription found');
+      return new Response(
+        JSON.stringify({ error: 'No subscription found in session' }), 
+        { status: 400 }
+      );
+    }
+
     // Update database with pro subscription status
     console.log('Attempting database update for user: ', clerkUserId);
-    return await updateUser(clerkUserId, 'pro', stripeCustomerId);
+    return await updateUser(clerkUserId, 'pro', stripeCustomerId, subscriptionId);
 }
-
-// TO DO: incorporate logic for updating and cancelling subscriptions
-// async function handleSubscriptionUpdated(subscription: Stripe.Subscription, stripe: Stripe) {
-//   // Get the Clerk user ID from customer metadata
-//   const customer = await stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer;
-//   const clerkUserId = customer.metadata?.clerk_user_id;
-
-//   if (!clerkUserId) {
-//     return new Response(
-//       JSON.stringify({ error: 'No Clerk user ID found in customer metadata' }), 
-//       { status: 400 }
-//     );
-//   }
-
-//   // Update subscription status in database
-//   await sql`
-//     UPDATE user_subscriptions 
-//     SET 
-//       subscription_status = ${subscription.status},
-//       updated_at = NOW()
-//     WHERE clerk_id = ${clerkUserId}
-//   `;
-// }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const stripeCustomerId = subscription.customer as string;
@@ -141,11 +130,6 @@ export async function POST(req: NextRequest) {
         await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
         break;
       }
-
-    //   case 'customer.subscription.updated': {
-    //     await handleSubscriptionUpdated(event.data.object as Stripe.Subscription, stripe);
-    //     break;
-    //   }
 
       case 'customer.subscription.deleted': {
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
