@@ -6,6 +6,7 @@ export interface User {
   created_at: Date;
   updated_at: Date;
   stripe_customer_id: string | null;
+  subscription_id: string | null;
 }
 
 const db = createPool({
