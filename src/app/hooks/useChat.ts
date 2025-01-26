@@ -18,10 +18,11 @@ export function useChat() {
     setMessage('');
     setIsLoading(true);
 
+    let aiResponse;
     try {
       // Process in sequence: Text -> Speech -> Video
       const allMessages = [...messages, userMessage];
-      const aiResponse = await generateText(allMessages);
+      aiResponse = await generateText(allMessages);
 
       // Generate video with scene-by-scene audio
       const videoUrl = await generateVideo(aiResponse.message.content);
@@ -34,7 +35,12 @@ export function useChat() {
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
       setVideoFilenames(prev => [...prev, videoUrl]);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error in chat processing:', error);
+      if (aiResponse?.message?.content) {
+        console.log('AI-generated script:', aiResponse.message.content);
+      } else {
+        console.log('No AI script response was generated before the error occurred');
+      }
     } finally {
       setIsLoading(false);
     }
