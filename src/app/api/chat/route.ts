@@ -58,55 +58,31 @@ export async function POST(req: Request) {
       Remember: ONLY return the voiceover script, enclosed in <scene> ... </scene> tags. 
       Do not include additional comments or formatting beyond that.`;
 
-    let apiMessages: { role: 'user' | 'assistant' | 'system'; content: string }[];
-    if (isPro) {
-      // For pro users (o1-mini), convert system message to user message
-      apiMessages = [{ role: 'user' as const, content: systemPrompt }, ...messages];
-    } else {
-      // For free users (Deepseek), use system message
-      apiMessages = [{ role: 'system' as const, content: systemPrompt }, ...messages];
-    }
-
-    console.log(`Using ${isPro ? 'OpenAI' : 'Deepseek'} API with model: ${model}`);
+      let apiMessages: { role: 'user' | 'assistant' | 'system'; content: string }[];
+      if (isPro) {
+        // For pro users (o1-Mini), convert system message to user message
+        apiMessages = [{ role: 'user' as const, content: systemPrompt }, ...messages];
+      } else {
+        // For free users (deepseek), use system message
+        apiMessages = [{ role: 'system' as const, content: systemPrompt }, ...messages];
+      }
+  
+      console.log(`Using ${isPro ? 'OpenAI' : 'Deepseek'} API with model: ${model}`);
     
-    const client = isPro ? openai : deepseek;
-    try {
+      const client = isPro ? openai : deepseek;
       const response = await client.chat.completions.create({
         model,
         messages: apiMessages,
         temperature: isPro ? 1 : 0,
       });
-
-      console.log('API Response status:', response.choices?.[0]?.finish_reason);
-      
+  
       const completion = response.choices[0].message.content;
-      if (!completion) {
-        throw new Error('No completion content received from API');
-      }
-      
       return NextResponse.json({ message: { role: 'assistant' as const, content: completion } });
-    } catch (apiError: any) {
-      console.error('API Error Details:', {
-        error: apiError.message,
-        response: apiError.response?.data,
-        status: apiError.response?.status,
-        url: apiError.response?.url,
-      });
-      throw apiError; // Re-throw to be caught by outer try-catch
+    } catch (error) {
+      console.error(error);
+      return NextResponse.json(
+        { error: 'Something went wrong' },
+        { status: 500 }
+      );
     }
-  } catch (error: any) {
-    console.error('Error in chat API:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-    });
-    
-    return NextResponse.json(
-      { 
-        error: 'Something went wrong processing your request',
-        details: error.message 
-      },
-      { status: 500 }
-    );
   }
-}
