@@ -3,8 +3,15 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { checkUserSubscription } from '@/app/lib/subscription';
 
+// OpenAI client for pro users
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Deepseek client for free users
+const deepseek = new OpenAI({
+  baseURL: 'https://api.deepseek.com',
+  apiKey: process.env.DEEPSEEK_API_KEY,
 });
 
 export interface ChatMessage {
@@ -23,11 +30,18 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!process.env.DEEPSEEK_API_KEY) {
+      return NextResponse.json(
+        { error: 'Deepseek API key is not configured' },
+        { status: 500 }
+      );
+    }
+
     const { messages }: { messages: ChatMessage[] } = await req.json();
     
     // Check user's subscription status using shared utility
     const isPro = await checkUserSubscription(userId);
-    const model = isPro ? 'o1-mini-2024-09-12' : 'gpt-4o-2024-11-20';
+    const model = isPro ? 'o1-mini-2024-09-12' : 'deepseek-chat';
 
     const systemPrompt = `You are an expert popularizer creating a text-only script for an educational video. 
       The user is a student asking for an explanation of a complex topic. 
@@ -46,25 +60,52 @@ export async function POST(req: Request) {
 
     let apiMessages: { role: 'user' | 'assistant' | 'system'; content: string }[];
     if (isPro) {
-      // For pro users (o1-Mini), convert system message to user message
+      // For pro users (o1-mini), convert system message to user message
       apiMessages = [{ role: 'user' as const, content: systemPrompt }, ...messages];
     } else {
-      // For free users (gpt-4o), use system message
+      // For free users (Deepseek), use system message
       apiMessages = [{ role: 'system' as const, content: systemPrompt }, ...messages];
     }
 
-    const response = await openai.chat.completions.create({
-      model,
-      messages: apiMessages,
-      temperature: isPro ? 1 : 0,
-    });
+    console.log(`Using ${isPro ? 'OpenAI' : 'Deepseek'} API with model: ${model}`);
+    
+    const client = isPro ? openai : deepseek;
+    try {
+      const response = await client.chat.completions.create({
+        model,
+        messages: apiMessages,
+        temperature: isPro ? 1 : 0,
+      });
 
-    const completion = response.choices[0].message.content;
-    return NextResponse.json({ message: { role: 'assistant' as const, content: completion } });
-  } catch (error) {
-    console.error(error);
+      console.log('API Response status:', response.choices?.[0]?.finish_reason);
+      
+      const completion = response.choices[0].message.content;
+      if (!completion) {
+        throw new Error('No completion content received from API');
+      }
+      
+      return NextResponse.json({ message: { role: 'assistant' as const, content: completion } });
+    } catch (apiError: any) {
+      console.error('API Error Details:', {
+        error: apiError.message,
+        response: apiError.response?.data,
+        status: apiError.response?.status,
+        url: apiError.response?.url,
+      });
+      throw apiError; // Re-throw to be caught by outer try-catch
+    }
+  } catch (error: any) {
+    console.error('Error in chat API:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    });
+    
     return NextResponse.json(
-      { error: 'Something went wrong' },
+      { 
+        error: 'Something went wrong processing your request',
+        details: error.message 
+      },
       { status: 500 }
     );
   }
