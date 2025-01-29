@@ -6,4 +6,4 @@ export const generateSpeech = async (text: string) => {
   });
   if (!response.ok) throw new Error('Failed to generate audio');
   return await response.blob();
-}; 
+};

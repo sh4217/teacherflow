@@ -5,30 +5,65 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 200; // 200 ms delay between retries
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function POST(req: Request) {
   try {
     const { text } = await req.json();
 
-    const mp3 = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: "alloy",
-      input: text,
-    });
+    if (!text) {
+      return NextResponse.json(
+        { error: 'Text input is required' },
+        { status: 400 }
+      );
+    }
 
-    // Convert the raw response to an ArrayBuffer
-    const buffer = Buffer.from(await mp3.arrayBuffer());
+    let lastError: any;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`Retry attempt ${attempt} for speech synthesis`);
+          await delay(RETRY_DELAY);
+        }
 
-    // Return the audio as a streaming response
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': buffer.length.toString(),
-      },
-    });
+        const mp3 = await openai.audio.speech.create({
+          model: "tts-1",
+          voice: "alloy",
+          input: text,
+        });
+
+        // Convert the raw response to an ArrayBuffer
+        const buffer = Buffer.from(await mp3.arrayBuffer());
+
+        // Return the audio as a streaming response
+        return new NextResponse(buffer, {
+          headers: {
+            'Content-Type': 'audio/mpeg',
+            'Content-Length': buffer.length.toString(),
+          },
+        });
+      } catch (error) {
+        console.error(`Speech synthesis attempt ${attempt + 1} failed:`, error);
+        lastError = error;
+        
+        // If this was our last retry, throw the error to be handled by the outer catch
+        if (attempt === MAX_RETRIES) {
+          throw error;
+        }
+      }
+    }
+
+    // This code should never be reached due to the throw in the loop
+    throw lastError;
   } catch (error) {
-    console.error(error);
+    console.error('Speech synthesis failed after all retries:', error);
     return NextResponse.json(
-      { error: 'Speech synthesis failed' },
+      { error: 'Speech synthesis failed after all retry attempts' },
       { status: 500 }
     );
   }
