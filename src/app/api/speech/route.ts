@@ -23,7 +23,6 @@ export async function POST(req: Request) {
       );
     }
 
-    let lastError: any;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
         if (attempt > 0) {
@@ -49,7 +48,6 @@ export async function POST(req: Request) {
         });
       } catch (error) {
         console.error(`Speech synthesis attempt ${attempt + 1} failed:`, error);
-        lastError = error;
         
         // If this was our last retry, throw the error to be handled by the outer catch
         if (attempt === MAX_RETRIES) {
@@ -57,9 +55,6 @@ export async function POST(req: Request) {
         }
       }
     }
-
-    // This code should never be reached due to the throw in the loop
-    throw lastError;
   } catch (error) {
     console.error('Speech synthesis failed after all retries:', error);
     return NextResponse.json(
