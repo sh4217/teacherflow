@@ -39,7 +39,7 @@ export const generateVideo = async (text: string) => {
 
   successfulScenes.forEach((result) => {
     formData.append('texts', result.scene);
-    formData.append('audio_files', result.audioBlob!, `scene_${result.index}.mp3`);
+    formData.append('audio_files', result.audioBlob as Blob, `scene_${result.index}.mp3`);
   });
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/generate-video`, {
