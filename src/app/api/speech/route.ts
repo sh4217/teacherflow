@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       );
     }
 
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         if (attempt > 0) {
           console.log(`Retry attempt ${attempt} for speech synthesis`);
