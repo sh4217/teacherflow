@@ -16,16 +16,30 @@ export const generateVideo = async (text: string) => {
     throw new Error('No scenes found in text');
   }
 
-  // Generate audio for each scene
-  const audioBlobs = await Promise.all(
-    scenes.map(scene => generateSpeech(scene))
+  // Generate audio for each scene and track results
+  const sceneResults = await Promise.all(
+    scenes.map(async (scene, index) => {
+      try {
+        const audioBlob = await generateSpeech(scene);
+        return { success: true, scene, audioBlob, index };
+      } catch (error) {
+        console.error(`Failed to generate audio for scene ${index + 1}:`, error);
+        return { success: false, scene, index };
+      }
+    })
   );
 
-  // Create form data with all scenes and audio files
+  // Filter out failed scenes and create form data with successful ones
   const formData = new FormData();
-  scenes.forEach((scene, i) => {
-    formData.append('texts', scene);
-    formData.append('audio_files', audioBlobs[i], `scene_${i}.mp3`);
+  const successfulScenes = sceneResults.filter((result) => result.success);
+
+  if (successfulScenes.length === 0) {
+    throw new Error('Failed to generate audio for any scenes');
+  }
+
+  successfulScenes.forEach((result) => {
+    formData.append('texts', result.scene);
+    formData.append('audio_files', result.audioBlob as Blob, `scene_${result.index}.mp3`);
   });
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/generate-video`, {
