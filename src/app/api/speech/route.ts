@@ -6,6 +6,7 @@ const openai = new OpenAI({
 });
 
 const MAX_RETRIES = 2;
+const LAST_ATTEMPT = MAX_RETRIES - 1;
 const RETRY_DELAY = 200; // 200 ms delay between retries
 
 async function delay(ms: number) {
@@ -23,8 +24,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let lastError: any;
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         if (attempt > 0) {
           console.log(`Retry attempt ${attempt} for speech synthesis`);
@@ -49,17 +49,13 @@ export async function POST(req: Request) {
         });
       } catch (error) {
         console.error(`Speech synthesis attempt ${attempt + 1} failed:`, error);
-        lastError = error;
         
         // If this was our last retry, throw the error to be handled by the outer catch
-        if (attempt === MAX_RETRIES) {
+        if (attempt === LAST_ATTEMPT) {
           throw error;
         }
       }
     }
-
-    // This code should never be reached due to the throw in the loop
-    throw lastError;
   } catch (error) {
     console.error('Speech synthesis failed after all retries:', error);
     return NextResponse.json(
