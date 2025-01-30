@@ -15,7 +15,8 @@ export default function Chat() {
     messages,
     isLoading,
     videoFilenames,
-    handleSubmit
+    handleSubmit,
+    resetChat
   } = useChat();
 
   const debugMode = useDebugMode();
@@ -31,6 +32,7 @@ export default function Chat() {
           messages={messages}
           isLoading={isLoading}
           debugMode={debugMode}
+          onReset={resetChat}
         />
       ) : (
         <div className="flex-1 flex items-center justify-center">
