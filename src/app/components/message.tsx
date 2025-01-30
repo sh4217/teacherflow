@@ -35,7 +35,8 @@ export default function Message({ message, debugMode, onReset }: MessageProps) {
                 <div className="flex gap-4">
                   <button
                     onClick={message.retryGeneration}
-                    className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    disabled={!message.retryGeneration}
+                    className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     Retry generation
                   </button>

@@ -11,6 +11,7 @@ const parseScenes = (text: string): string[] => {
 };
 
 export const generateVideo = async (text: string) => {
+
   const scenes = parseScenes(text);
   if (scenes.length === 0) {
     throw new Error('No scenes found in text');

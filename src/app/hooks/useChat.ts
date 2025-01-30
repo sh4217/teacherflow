@@ -20,6 +20,58 @@ export function useChat() {
     setVideoFilenames([]);
   };
 
+  const generateVideoWithRetry = async (content: string, findMessage: (messages: ChatMessage[]) => number) => {
+    try {
+      setIsLoading(true);
+      
+      // Update UI to show loading state
+      setMessages(prevMessages => {
+        const messageIndex = findMessage(prevMessages);
+        if (messageIndex === -1) return prevMessages;
+
+        const newMessages = [...prevMessages];
+        newMessages[messageIndex] = { ...newMessages[messageIndex], error: false };
+        return newMessages;
+      });
+
+      // Generate video
+      const videoUrl = await generateVideo(content);
+      
+      // Update message with video URL
+      setMessages(prevMessages => {
+        const messageIndex = findMessage(prevMessages);
+        if (messageIndex === -1) return prevMessages;
+
+        const newMessages = [...prevMessages];
+        newMessages[messageIndex] = {
+          ...newMessages[messageIndex],
+          videoUrl,
+          error: false
+        };
+        return newMessages;
+      });
+
+      if (videoUrl) {
+        setVideoFilenames(prev => [...prev, videoUrl]);
+      }
+
+      return videoUrl;
+    } catch (error) {
+      console.error('Error in generateVideoWithRetry:', error);
+      setMessages(prevMessages => {
+        const messageIndex = findMessage(prevMessages);
+        if (messageIndex === -1) return prevMessages;
+
+        const newMessages = [...prevMessages];
+        newMessages[messageIndex] = { ...newMessages[messageIndex], error: true };
+        return newMessages;
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const generateVideoForMessage = async (aiMessage: ChatMessage) => {
     try {
       setIsLoading(true);
@@ -32,66 +84,21 @@ export function useChat() {
     } catch (error) {
       console.error('Error generating video:', error);
       
-      // Create a retry function that uses content matching
-      const retryGeneration = async () => {
-        try {
-          setIsLoading(true);
-          
-          // First update UI to show loading state
-          setMessages(prevMessages => {
-            const targetIndex = prevMessages.findIndex(msg => 
-              msg.role === 'assistant' && msg.content === aiMessage.content
-            );
-            if (targetIndex === -1) return prevMessages;
-            
-            const newMessages = [...prevMessages];
-            newMessages[targetIndex] = { ...newMessages[targetIndex], error: false };
-            return newMessages;
-          });
-
-          // Generate new video
-          const videoUrl = await generateVideo(aiMessage.content);
-          
-          // Update message with new video URL
-          setMessages(prevMessages => {
-            const targetIndex = prevMessages.findIndex(msg => 
-              msg.role === 'assistant' && msg.content === aiMessage.content
-            );
-            if (targetIndex === -1) return prevMessages;
-            
-            const newMessages = [...prevMessages];
-            newMessages[targetIndex] = {
-              ...newMessages[targetIndex],
-              videoUrl,
-              error: false
-            };
-            return newMessages;
-          });
-
-          if (videoUrl) {
-            setVideoFilenames(prev => [...prev, videoUrl]);
-          }
-        } catch (error) {
-          console.error('Error in retry:', error);
-          setMessages(prevMessages => {
-            const targetIndex = prevMessages.findIndex(msg => 
-              msg.role === 'assistant' && msg.content === aiMessage.content
-            );
-            if (targetIndex === -1) return prevMessages;
-            
-            const newMessages = [...prevMessages];
-            newMessages[targetIndex] = { ...newMessages[targetIndex], error: true };
-            return newMessages;
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
       return {
         ...aiMessage,
         error: true,
-        retryGeneration
+        retryGeneration: async () => {
+          try {
+            const findMessage = (messages: ChatMessage[]) => 
+              messages.findIndex(msg => 
+                msg.role === 'assistant' && msg.content === aiMessage.content
+              );
+            
+            await generateVideoWithRetry(aiMessage.content, findMessage);
+          } catch (error) {
+            console.error('Error in retry:', error);
+          }
+        }
       };
     } finally {
       setIsLoading(false);
@@ -112,7 +119,7 @@ export function useChat() {
       const allMessages = [...messages, userMessage];
       aiResponse = await generateText(allMessages);
 
-      if (!aiResponse) {
+      if (!aiResponse?.message.content) {
         throw new Error('Failed to generate AI response');
       }
 
@@ -120,46 +127,26 @@ export function useChat() {
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
       
       if (assistantMessage.videoUrl) {
-        setVideoFilenames(prev => [...prev, assistantMessage.videoUrl!]);
+        setVideoFilenames(prev => [...prev, assistantMessage.videoUrl]);
       }
     } catch (error) {
       console.error('Error in chat processing:', error);
       setMessages(prevMessages => [
         ...prevMessages,
         {
-          role: 'assistant',
+          role: 'assistant' as const,
           content: aiResponse?.message?.content || '',
           error: true,
           retryGeneration: async () => {
-            if (!aiResponse?.message?.content) return;
+            if (!aiResponse?.message?.content) {
+              setIsLoading(false);
+              return;
+            }
             try {
-              const videoUrl = await generateVideo(aiResponse.message.content);
-              
-              setMessages(prevMessages => {
-                const lastIndex = prevMessages.length - 1;
-                const newMessages = [...prevMessages];
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  error: false,
-                  videoUrl
-                };
-                return newMessages;
-              });
-              
-              if (videoUrl) {
-                setVideoFilenames(prev => [...prev, videoUrl]);
-              }
+              const findMessage = (messages: ChatMessage[]) => messages.length - 1;
+              await generateVideoWithRetry(aiResponse.message.content, findMessage);
             } catch (retryError) {
               console.error('Error in retry:', retryError);
-              setMessages(prevMessages => {
-                const lastIndex = prevMessages.length - 1;
-                const newMessages = [...prevMessages];
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  error: true
-                };
-                return newMessages;
-              });
             }
           }
         }
@@ -178,4 +165,4 @@ export function useChat() {
     handleSubmit,
     resetChat
   };
-} 
+}
