@@ -16,8 +16,8 @@ export const generateVideo = async (
   text: string,
   onProgress?: ProgressCallback
 ): Promise<string> => {
-  if (!process.env.NEXT_PUBLIC_BACKEND_URL || !process.env.NEXT_PUBLIC_WS_URL) {
-    throw new Error('Backend URL or WebSocket URL not configured');
+  if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
+    throw new Error('Backend URL not configured');
   }
 
   const scenes = parseScenes(text);
