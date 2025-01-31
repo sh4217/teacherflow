@@ -61,28 +61,27 @@ export const generateVideo = async (
 
   // 2. Connect to WebSocket and wait for completion
   return new Promise<string>((resolve, reject) => {
-    let connectionTimeout: NodeJS.Timeout;
-    let completionTimeout: NodeJS.Timeout;
+    const timeouts = {
+      connection: setTimeout(() => {
+        cleanup();
+        reject(new Error('WebSocket connection timed out'));
+      }, 10000), // 10 seconds timeout for initial connection
+      completion: null as NodeJS.Timeout | null
+    };
     
     const cleanup = () => {
-      if (connectionTimeout) clearTimeout(connectionTimeout);
-      if (completionTimeout) clearTimeout(completionTimeout);
+      if (timeouts.connection) clearTimeout(timeouts.connection);
+      if (timeouts.completion) clearTimeout(timeouts.completion);
       if (ws && ws.readyState === WebSocket.OPEN) ws.close();
     };
-
-    // Set a timeout for initial connection
-    connectionTimeout = setTimeout(() => {
-      cleanup();
-      reject(new Error('WebSocket connection timed out'));
-    }, 10000); // 10 seconds timeout for initial connection
 
     const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/ws/${job_id}`);
     
     ws.onopen = () => {
-      if (connectionTimeout) clearTimeout(connectionTimeout);
+      clearTimeout(timeouts.connection);
       
       // Set completion timeout
-      completionTimeout = setTimeout(() => {
+      timeouts.completion = setTimeout(() => {
         cleanup();
         reject(new Error('Video generation timed out'));
       }, 5 * 60 * 1000); // 5 minutes timeout for completion
@@ -101,8 +100,8 @@ export const generateVideo = async (
           reject(new Error(data.error || 'Video generation failed'));
         }
         
-        // Call progress callback if provided
-        if (data.progress && onProgress) {
+        // Call progress callback if provided with validated progress value
+        if (typeof data.progress === 'number' && data.progress >= 0 && data.progress <= 100 && onProgress) {
           onProgress(data.progress);
         }
       } catch (error) {

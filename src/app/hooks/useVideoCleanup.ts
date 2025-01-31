@@ -4,11 +4,14 @@ export function useVideoCleanup(videoFilenames: string[]) {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (videoFilenames.length > 0) {
-        // Extract just the filenames from the full URLs
+        // Extract filenames safely using URL API
         const filenames = videoFilenames.map(url => {
-          const parts = url.split('/');
-          return parts[parts.length - 1];
-        });
+          try {
+            return new URL(url).pathname.split('/').pop() || '';
+          } catch {
+            return '';
+          }
+        }).filter(Boolean);
 
         const jsonPayload = JSON.stringify(filenames);
 
@@ -33,4 +36,4 @@ export function useVideoCleanup(videoFilenames: string[]) {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [videoFilenames]);
-} 
+}
