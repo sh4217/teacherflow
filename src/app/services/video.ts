@@ -51,7 +51,6 @@ export const generateVideo = async (
     formData.append('audio_files', result.audioBlob as Blob, `scene_${result.index}.mp3`);
   });
 
-  // 1. Start the job
   const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/generate-video`, {
     method: 'POST',
     body: formData,
@@ -59,70 +58,43 @@ export const generateVideo = async (
   if (!response.ok) throw new Error('Failed to start video generation');
   const { job_id } = await response.json();
 
-  // 2. Connect to WebSocket and wait for completion
-  return new Promise<string>((resolve, reject) => {
-    const timeouts = {
-      connection: setTimeout(() => {
-        cleanup();
-        reject(new Error('WebSocket connection timed out'));
-      }, 10000), // 10 seconds timeout for initial connection
-      completion: null as NodeJS.Timeout | null
-    };
-    
-    const cleanup = () => {
-      if (timeouts.connection) clearTimeout(timeouts.connection);
-      if (timeouts.completion) clearTimeout(timeouts.completion);
-      if (ws && ws.readyState === WebSocket.OPEN) ws.close();
-    };
+  // Polling for job status
+  const pollInterval = 2000;
+  const maxAttempts = 150;
+  let attempts = 0;
 
-    const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/ws/${job_id}`);
+  while (attempts < maxAttempts) {
+    const statusResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/job-status/${job_id}`);
     
-    ws.onopen = () => {
-      clearTimeout(timeouts.connection);
-      
-      // Set completion timeout
-      timeouts.completion = setTimeout(() => {
-        cleanup();
-        reject(new Error('Video generation timed out'));
-      }, 5 * 60 * 1000); // 5 minutes timeout for completion
-    };
-    
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        if (data.status === 'completed') {
-          const videoUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/${data.videoUrl}`;
-          cleanup();
-          resolve(videoUrl);
-        } else if (data.status === 'failed') {
-          cleanup();
-          reject(new Error(data.error || 'Video generation failed'));
-        }
-        
-        // Call progress callback if provided with validated progress value
-        if (typeof data.progress === 'number' && data.progress >= 0 && data.progress <= 100 && onProgress) {
-          onProgress(data.progress);
-        }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-        cleanup();
-        reject(new Error('Invalid WebSocket message received'));
+    if (!statusResponse.ok) {
+      if (statusResponse.status === 404) {
+        console.error(`[Video Generation] Job ${job_id} not found`);
+        throw new Error('Job not found');
       }
-    };
-    
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      cleanup();
-      reject(new Error('WebSocket connection error'));
-    };
+      console.error(`[Video Generation] Failed to fetch status for job ${job_id}`);
+      throw new Error('Failed to fetch job status');
+    }
 
-    ws.onclose = (event) => {
-      cleanup();
-      // Only reject if we haven't already resolved/rejected
-      if (event.code !== 1000) {
-        reject(new Error('WebSocket connection closed unexpectedly'));
-      }
-    };
-  });
+    const jobData = await statusResponse.json();
+
+    if (jobData.status === 'completed' && jobData.videoUrl) {
+      return `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/${jobData.videoUrl}`;
+    }
+
+    if (jobData.status === 'failed') {
+      console.error(`[Video Generation] Job ${job_id} failed:`, jobData.error);
+      throw new Error(jobData.error || 'Video generation failed');
+    }
+
+    // Update progress if available
+    if (typeof jobData.progress === 'number' && jobData.progress >= 0 && jobData.progress <= 100 && onProgress) {
+      onProgress(jobData.progress);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    attempts++;
+  }
+
+  console.error(`[Video Generation] Job ${job_id} timed out after ${maxAttempts} attempts`);
+  throw new Error('Video generation timed out after 5 minutes');
 };
