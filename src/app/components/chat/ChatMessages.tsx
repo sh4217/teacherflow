@@ -7,15 +7,23 @@ interface ChatMessagesProps {
   isLoading: boolean;
   debugMode: boolean;
   onReset: () => void;
+  progress?: number;
 }
 
-export default function ChatMessages({ messages, isLoading, debugMode, onReset }: ChatMessagesProps) {
+export default function ChatMessages({ messages, isLoading, debugMode, onReset, progress }: ChatMessagesProps) {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-6">
       {messages.map((msg, index) => (
         <Message key={index} message={msg} debugMode={debugMode} onReset={onReset} />
       ))}
-      {isLoading && <LoadingAnimation />}
+      {isLoading && (
+        <div className="flex flex-col items-center gap-2">
+          <LoadingAnimation />
+          {progress !== undefined && (
+            <p className="text-gray-500">Video generation: {progress}%</p>
+          )}
+        </div>
+      )}
     </div>
   );
 } 

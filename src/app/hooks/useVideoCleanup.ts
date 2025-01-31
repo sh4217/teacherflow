@@ -4,7 +4,13 @@ export function useVideoCleanup(videoFilenames: string[]) {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (videoFilenames.length > 0) {
-        const jsonPayload = JSON.stringify(videoFilenames);
+        // Extract just the filenames from the full URLs
+        const filenames = videoFilenames.map(url => {
+          const parts = url.split('/');
+          return parts[parts.length - 1];
+        });
+
+        const jsonPayload = JSON.stringify(filenames);
 
         if (navigator.sendBeacon) {
           // Use sendBeacon for reliable background cleanup
