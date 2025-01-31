@@ -8,7 +8,7 @@ const openai = new OpenAI({
 });
 
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'developer';
   content: string;
   videoUrl?: string;
 }
@@ -24,10 +24,9 @@ export async function POST(req: Request) {
     }
 
     const { messages }: { messages: ChatMessage[] } = await req.json();
-    
-    // Check user's subscription status using shared utility
+
     const isPro = await checkUserSubscription(userId);
-    const model = isPro ? 'o1-mini-2024-09-12' : 'gpt-4o-2024-11-20';
+    const model = isPro ? 'o3-mini-2025-01-31' : 'o1-mini-2024-09-12';
 
     const systemPrompt = `You are an expert popularizer creating a text-only script for an educational video. 
       The user is a student asking for an explanation of a complex topic. 
@@ -44,19 +43,19 @@ export async function POST(req: Request) {
       Remember: ONLY return the voiceover script, enclosed in <scene> ... </scene> tags. 
       Do not include additional comments or formatting beyond that.`;
 
-    let apiMessages: { role: 'user' | 'assistant' | 'system'; content: string }[];
+    let apiMessages: { role: 'user' | 'assistant' | 'system' | 'developer'; content: string }[];
     if (isPro) {
-      // For pro users (o1-Mini), convert system message to user message
-      apiMessages = [{ role: 'user' as const, content: systemPrompt }, ...messages];
+      // For pro users (o3-mini), use developer message
+      apiMessages = [{ role: 'developer' as const, content: systemPrompt }, ...messages];
     } else {
-      // For free users (gpt-4o), use system message
-      apiMessages = [{ role: 'system' as const, content: systemPrompt }, ...messages];
+      // For free users (o1-mini), convert system message to user message
+      apiMessages = [{ role: 'user' as const, content: systemPrompt }, ...messages];
     }
 
     const response = await openai.chat.completions.create({
       model,
       messages: apiMessages,
-      temperature: isPro ? 1 : 0,
+      temperature: 1
     });
 
     const completion = response.choices[0].message.content;
