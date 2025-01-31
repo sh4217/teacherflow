@@ -4,7 +4,16 @@ export function useVideoCleanup(videoFilenames: string[]) {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (videoFilenames.length > 0) {
-        const jsonPayload = JSON.stringify(videoFilenames);
+        // Extract filenames safely using URL API
+        const filenames = videoFilenames.map(url => {
+          try {
+            return new URL(url).pathname.split('/').pop() || '';
+          } catch {
+            return '';
+          }
+        }).filter(Boolean);
+
+        const jsonPayload = JSON.stringify(filenames);
 
         if (navigator.sendBeacon) {
           // Use sendBeacon for reliable background cleanup
@@ -27,4 +36,4 @@ export function useVideoCleanup(videoFilenames: string[]) {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [videoFilenames]);
-} 
+}

@@ -12,17 +12,20 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [videoFilenames, setVideoFilenames] = useState<string[]>([]);
+  const [progress, setProgress] = useState<number>();
 
   const resetChat = () => {
     setMessage('');
     setMessages([]);
     setIsLoading(false);
     setVideoFilenames([]);
+    setProgress(undefined);
   };
 
   const generateVideoWithRetry = async (content: string, findMessage: (messages: ChatMessage[]) => number) => {
     try {
       setIsLoading(true);
+      setProgress(0);
       
       // Update UI to show loading state
       setMessages(prevMessages => {
@@ -35,7 +38,7 @@ export function useChat() {
       });
 
       // Generate video
-      const videoUrl = await generateVideo(content);
+      const videoUrl = await generateVideo(content, setProgress);
       
       // Update message with video URL
       setMessages(prevMessages => {
@@ -69,13 +72,15 @@ export function useChat() {
       throw error;
     } finally {
       setIsLoading(false);
+      setProgress(undefined);
     }
   };
 
   const generateVideoForMessage = async (aiMessage: ChatMessage) => {
     try {
       setIsLoading(true);
-      const videoUrl = await generateVideo(aiMessage.content);
+      setProgress(0);
+      const videoUrl = await generateVideo(aiMessage.content, setProgress);
       return {
         ...aiMessage,
         videoUrl,
@@ -102,6 +107,7 @@ export function useChat() {
       };
     } finally {
       setIsLoading(false);
+      setProgress(undefined);
     }
   };
 
@@ -113,6 +119,7 @@ export function useChat() {
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setMessage('');
     setIsLoading(true);
+    setProgress(0);
 
     let aiResponse: AIResponse | undefined;
     try {
@@ -126,8 +133,9 @@ export function useChat() {
       const assistantMessage = await generateVideoForMessage(aiResponse.message);
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
       
-      if (assistantMessage.videoUrl) {
-        setVideoFilenames(prev => [...prev, assistantMessage.videoUrl]);
+      const videoUrl = assistantMessage.videoUrl;
+      if (videoUrl) {
+        setVideoFilenames(prev => [...prev, videoUrl]);
       }
     } catch (error) {
       console.error('Error in chat processing:', error);
@@ -153,6 +161,7 @@ export function useChat() {
       ]);
     } finally {
       setIsLoading(false);
+      setProgress(undefined);
     }
   };
 
@@ -163,6 +172,7 @@ export function useChat() {
     isLoading,
     videoFilenames,
     handleSubmit,
-    resetChat
+    resetChat,
+    progress
   };
 }

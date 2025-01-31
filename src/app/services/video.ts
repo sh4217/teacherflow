@@ -10,7 +10,15 @@ const parseScenes = (text: string): string[] => {
   return scenes;
 };
 
-export const generateVideo = async (text: string) => {
+export type ProgressCallback = (progress: number) => void;
+
+export const generateVideo = async (
+  text: string,
+  onProgress?: ProgressCallback
+): Promise<string> => {
+  if (!process.env.NEXT_PUBLIC_BACKEND_URL || !process.env.NEXT_PUBLIC_WS_URL) {
+    throw new Error('Backend URL or WebSocket URL not configured');
+  }
 
   const scenes = parseScenes(text);
   if (scenes.length === 0) {
@@ -43,12 +51,78 @@ export const generateVideo = async (text: string) => {
     formData.append('audio_files', result.audioBlob as Blob, `scene_${result.index}.mp3`);
   });
 
+  // 1. Start the job
   const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/generate-video`, {
     method: 'POST',
     body: formData,
   });
-  if (!response.ok) throw new Error('Failed to generate video');
-  const data = await response.json();
+  if (!response.ok) throw new Error('Failed to start video generation');
+  const { job_id } = await response.json();
 
-  return data.videoUrl;
+  // 2. Connect to WebSocket and wait for completion
+  return new Promise<string>((resolve, reject) => {
+    const timeouts = {
+      connection: setTimeout(() => {
+        cleanup();
+        reject(new Error('WebSocket connection timed out'));
+      }, 10000), // 10 seconds timeout for initial connection
+      completion: null as NodeJS.Timeout | null
+    };
+    
+    const cleanup = () => {
+      if (timeouts.connection) clearTimeout(timeouts.connection);
+      if (timeouts.completion) clearTimeout(timeouts.completion);
+      if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+    };
+
+    const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/ws/${job_id}`);
+    
+    ws.onopen = () => {
+      clearTimeout(timeouts.connection);
+      
+      // Set completion timeout
+      timeouts.completion = setTimeout(() => {
+        cleanup();
+        reject(new Error('Video generation timed out'));
+      }, 5 * 60 * 1000); // 5 minutes timeout for completion
+    };
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.status === 'completed') {
+          const videoUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/${data.videoUrl}`;
+          cleanup();
+          resolve(videoUrl);
+        } else if (data.status === 'failed') {
+          cleanup();
+          reject(new Error(data.error || 'Video generation failed'));
+        }
+        
+        // Call progress callback if provided with validated progress value
+        if (typeof data.progress === 'number' && data.progress >= 0 && data.progress <= 100 && onProgress) {
+          onProgress(data.progress);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+        cleanup();
+        reject(new Error('Invalid WebSocket message received'));
+      }
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      cleanup();
+      reject(new Error('WebSocket connection error'));
+    };
+
+    ws.onclose = (event) => {
+      cleanup();
+      // Only reject if we haven't already resolved/rejected
+      if (event.code !== 1000) {
+        reject(new Error('WebSocket connection closed unexpectedly'));
+      }
+    };
+  });
 };
