@@ -1,6 +1,6 @@
 export interface ChatMessage {
   role: 'user' | 'assistant';
-  content: string;
+  content?: string;
   videoUrl?: string;
   error?: boolean;
   retryGeneration?: () => Promise<void>;
