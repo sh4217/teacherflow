@@ -1,20 +1,18 @@
 import { ChatMessage } from '../types/chat';
-import AudioControls from './audio-controls';
 import VideoPlayer from './video-player';
 
 interface MessageProps {
   message: ChatMessage;
-  debugMode: boolean;
   onReset: () => void;
 }
 
-export default function Message({ message, debugMode, onReset }: MessageProps) {
+export default function Message({ message, onReset }: MessageProps) {
   return (
     <div 
       className={`flex ${message.role === 'user' ? 'justify-center w-full' : 'justify-start'}`}
     >
       <div className={`flex flex-col gap-2 ${message.role === 'assistant' && message.error ? 'w-full items-center' : ''}`}>
-        {(message.role === 'user' || debugMode) && (
+        {message.role === 'user' && (
           <div 
             className={`
               px-4 py-2
@@ -49,7 +47,6 @@ export default function Message({ message, debugMode, onReset }: MessageProps) {
                 </div>
               </div>
             )}
-            {debugMode && <AudioControls text={message.content} />}
           </>
         )}
       </div>

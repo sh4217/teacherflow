@@ -1,11 +1,9 @@
 'use client';
 
 import { useChat } from '../../hooks/useChat';
-import { useDebugMode } from '../../hooks/useDebugMode';
 import { useVideoCleanup } from '../../hooks/useVideoCleanup';
 import ChatForm from './ChatForm';
 import ChatMessages from './ChatMessages';
-import DebugBanner from './DebugBanner';
 import Tagline from '../Tagline';
 
 export default function Chat() {
@@ -20,19 +18,16 @@ export default function Chat() {
     progress
   } = useChat();
 
-  const debugMode = useDebugMode();
   useVideoCleanup(videoFilenames);
 
   const showChat = messages.length > 0 || isLoading;
 
   return (
     <div className="absolute inset-0 flex flex-col">
-      <DebugBanner debugMode={debugMode} />
       {showChat ? (
         <ChatMessages 
           messages={messages}
           isLoading={isLoading}
-          debugMode={debugMode}
           onReset={resetChat}
           progress={progress}
         />
@@ -57,4 +52,4 @@ export default function Chat() {
       )}
     </div>
   );
-} 
+}

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { ChatMessage } from '../types/chat';
-import { generateText } from '../services/chat';
 import { generateVideo } from '../services/video';
+import { useSubscription } from '../context/subscription-context';
 
-interface AIResponse {
-  message: ChatMessage;
+function hasContent(message: ChatMessage): message is ChatMessage & { content: string } {
+  return typeof message.content === 'string' && message.content.length > 0;
 }
 
 export function useChat() {
@@ -13,6 +13,7 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [videoFilenames, setVideoFilenames] = useState<string[]>([]);
   const [progress, setProgress] = useState<number>();
+  const { subscription } = useSubscription();
 
   const resetChat = () => {
     setMessage('');
@@ -22,7 +23,93 @@ export function useChat() {
     setProgress(undefined);
   };
 
-  const generateVideoWithRetry = async (content: string, findMessage: (messages: ChatMessage[]) => number) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim() || isLoading) return;
+  
+    const userMessage: ChatMessage = { 
+      role: 'user', 
+      content: message.trim() 
+    };
+    
+    if (!hasContent(userMessage)) {
+      console.error('User message must have content');
+      return;
+    }
+
+    setMessages(prevMessages => [...prevMessages, userMessage]);
+    setMessage('');
+    setIsLoading(true);
+    setProgress(0);
+  
+    try {
+      const assistantMessage = await generateVideoResponse(userMessage);
+      setMessages(prevMessages => [...prevMessages, assistantMessage as ChatMessage]);
+  
+      if (assistantMessage.videoUrl) {
+        setVideoFilenames(prev => [...prev, assistantMessage.videoUrl]);
+      }
+    } catch (error) {
+      console.error('Error in chat processing:', error);
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          role: 'assistant',
+          error: true,
+          retryGeneration: async () => {
+            try {
+              const findMessage = (messages: ChatMessage[]) => messages.length - 1;
+              await retryVideoGeneration(userMessage.content, findMessage);
+            } catch (retryError) {
+              console.error('Error in retry:', retryError);
+            }
+          }
+        }
+      ]);
+    } finally {
+      setIsLoading(false);
+      setProgress(undefined);
+    }
+  };
+
+  const generateVideoResponse = async (userMessage: ChatMessage) => {
+    if (!hasContent(userMessage)) {
+      throw new Error('User message must have content');
+    }
+
+    try {
+      setIsLoading(true);
+      setProgress(0);
+      const videoUrl = await generateVideo(userMessage.content, subscription, setProgress);
+      return {
+        role: 'assistant',
+        videoUrl,
+        error: false
+      };
+    } catch (error) {
+      console.error('Error generating video:', error);
+      return {
+        role: 'assistant',
+        error: true,
+        retryGeneration: async () => {
+          try {
+            const findMessage = (messages: ChatMessage[]) =>
+              messages.findIndex(
+                msg => msg.role === 'assistant' && !msg.videoUrl
+              );
+            await retryVideoGeneration(userMessage.content, findMessage);
+          } catch (retryError) {
+            console.error('Error in retry:', retryError);
+          }
+        }
+      };
+    } finally {
+      setIsLoading(false);
+      setProgress(undefined);
+    }
+  };
+
+  const retryVideoGeneration = async (content: string, findMessage: (messages: ChatMessage[]) => number) => {
     try {
       setIsLoading(true);
       setProgress(0);
@@ -38,7 +125,7 @@ export function useChat() {
       });
 
       // Generate video
-      const videoUrl = await generateVideo(content, setProgress);
+      const videoUrl = await generateVideo(content, subscription, setProgress);
       
       // Update message with video URL
       setMessages(prevMessages => {
@@ -60,7 +147,7 @@ export function useChat() {
 
       return videoUrl;
     } catch (error) {
-      console.error('Error in generateVideoWithRetry:', error);
+      console.error('Error in generateVideoWithRetry: ', error);
       setMessages(prevMessages => {
         const messageIndex = findMessage(prevMessages);
         if (messageIndex === -1) return prevMessages;
@@ -75,96 +162,7 @@ export function useChat() {
       setProgress(undefined);
     }
   };
-
-  const generateVideoForMessage = async (aiMessage: ChatMessage) => {
-    try {
-      setIsLoading(true);
-      setProgress(0);
-      const videoUrl = await generateVideo(aiMessage.content, setProgress);
-      return {
-        ...aiMessage,
-        videoUrl,
-        error: false
-      };
-    } catch (error) {
-      console.error('Error generating video:', error);
-      
-      return {
-        ...aiMessage,
-        error: true,
-        retryGeneration: async () => {
-          try {
-            const findMessage = (messages: ChatMessage[]) => 
-              messages.findIndex(msg => 
-                msg.role === 'assistant' && msg.content === aiMessage.content
-              );
-            
-            await generateVideoWithRetry(aiMessage.content, findMessage);
-          } catch (error) {
-            console.error('Error in retry:', error);
-          }
-        }
-      };
-    } finally {
-      setIsLoading(false);
-      setProgress(undefined);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim() || isLoading) return;
-
-    const userMessage: ChatMessage = { role: 'user', content: message.trim() };
-    setMessages(prevMessages => [...prevMessages, userMessage]);
-    setMessage('');
-    setIsLoading(true);
-    setProgress(0);
-
-    let aiResponse: AIResponse | undefined;
-    try {
-      const allMessages = [...messages, userMessage];
-      aiResponse = await generateText(allMessages);
-
-      if (!aiResponse?.message.content) {
-        throw new Error('Failed to generate AI response');
-      }
-
-      const assistantMessage = await generateVideoForMessage(aiResponse.message);
-      setMessages(prevMessages => [...prevMessages, assistantMessage]);
-      
-      const videoUrl = assistantMessage.videoUrl;
-      if (videoUrl) {
-        setVideoFilenames(prev => [...prev, videoUrl]);
-      }
-    } catch (error) {
-      console.error('Error in chat processing:', error);
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant' as const,
-          content: aiResponse?.message?.content || '',
-          error: true,
-          retryGeneration: async () => {
-            if (!aiResponse?.message?.content) {
-              setIsLoading(false);
-              return;
-            }
-            try {
-              const findMessage = (messages: ChatMessage[]) => messages.length - 1;
-              await generateVideoWithRetry(aiResponse.message.content, findMessage);
-            } catch (retryError) {
-              console.error('Error in retry:', retryError);
-            }
-          }
-        }
-      ]);
-    } finally {
-      setIsLoading(false);
-      setProgress(undefined);
-    }
-  };
-
+  
   return {
     message,
     setMessage,

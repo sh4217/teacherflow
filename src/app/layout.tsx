@@ -27,23 +27,31 @@ export default function RootLayout({
       <html lang="en">
         <body>
           <GradientBackground />
-          <nav className="h-20 flex items-center justify-between px-4">
-            <Logo />
-            <div className="flex gap-2 items-center">
-              <SignedOut>
-                <SignInButton />
-              </SignedOut>
-              <SignedIn>
-                <SubscriptionProvider>
+          <SignedIn>
+            <SubscriptionProvider>
+              <nav className="h-20 flex items-center justify-between px-4">
+                <Logo />
+                <div className="flex gap-2 items-center">
                   <SubscribeButton />
                   <UserButton />
-                </SubscriptionProvider>
-              </SignedIn>
-            </div>
-          </nav>
-          <main>
-            {children}
-          </main>
+                </div>
+              </nav>
+              <main>
+                {children}
+              </main>
+            </SubscriptionProvider>
+          </SignedIn>
+          <SignedOut>
+            <nav className="h-20 flex items-center justify-between px-4">
+              <Logo />
+              <div className="flex gap-2 items-center">
+                <SignInButton />
+              </div>
+            </nav>
+            <main>
+              {children}
+            </main>
+          </SignedOut>
         </body>
       </html>
     </ClerkProvider>
