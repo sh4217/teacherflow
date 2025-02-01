@@ -78,8 +78,6 @@ export function useChat() {
     }
 
     try {
-      setIsLoading(true);
-      setProgress(0);
       const videoUrl = await generateVideo(userMessage.content, subscription, setProgress);
       return {
         role: 'assistant',
@@ -102,11 +100,8 @@ export function useChat() {
             console.error('Error in retry:', retryError);
           }
         }
-      };
-    } finally {
-      setIsLoading(false);
-      setProgress(undefined);
-    }
+      }
+    };
   };
 
   const retryVideoGeneration = async (content: string, findMessage: (messages: ChatMessage[]) => number) => {
